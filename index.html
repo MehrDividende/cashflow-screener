@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aktien-Screener</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#121a2e;
+      --panel-2:#17223b;
+      --border:#243251;
+      --text:#e8eefc;
+      --muted:#9fb0d1;
+      --green:#22c55e;
+      --yellow:#f59e0b;
+      --red:#ef4444;
+      --blue:#60a5fa;
+      --cyan:#22d3ee;
+      --shadow:0 12px 30px rgba(0,0,0,.35);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:radial-gradient(circle at top right,#17223f 0%,#0b1020 35%,#090d1a 100%);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    body{min-height:100vh}
+    .container{max-width:1560px;margin:0 auto;padding:28px 20px 80px}
+    .header{
+      display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+      margin-bottom:22px;padding:22px 24px;border:1px solid rgba(255,255,255,.06);
+      background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+      border-radius:24px;box-shadow:var(--shadow);backdrop-filter:blur(12px)
+    }
+    .title-wrap h1{margin:0;font-size:clamp(1.5rem,2vw,2.3rem);letter-spacing:.2px}
+    .title-wrap p{margin:8px 0 0;color:var(--muted);font-size:.98rem}
+    .controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .badge{
+      display:inline-flex;align-items:center;gap:8px;background:#10192d;border:1px solid var(--border);
+      color:var(--muted);padding:10px 14px;border-radius:999px;font-size:.92rem
+    }
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 6px rgba(34,211,238,.12)}
+    button{
+      appearance:none;border:none;cursor:pointer;color:#08111f;background:linear-gradient(135deg,#7dd3fc,#60a5fa);
+      font-weight:700;padding:12px 16px;border-radius:14px;font-size:.95rem;box-shadow:0 10px 22px rgba(96,165,250,.25);
+      transition:transform .15s ease,box-shadow .15s ease,opacity .15s ease
+    }
+    button:hover{transform:translateY(-1px);box-shadow:0 14px 26px rgba(96,165,250,.35)}
+    button:disabled{opacity:.55;cursor:not-allowed;transform:none}
+    .grid{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px
+    }
+    .card{
+      background:linear-gradient(180deg,rgba(18,26,46,.95),rgba(14,21,38,.95));
+      border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);
+      position:relative;overflow:hidden
+    }
+    .card::before{
+      content:"";position:absolute;inset:-1px auto auto -1px;width:120px;height:120px;
+      background:radial-gradient(circle,rgba(96,165,250,.14),transparent 70%);pointer-events:none
+    }
+    .top{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px
+    }
+    .identity{min-width:0}
+    .ticker{
+      display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;
+      background:#0e172b;border:1px solid var(--border);font-weight:800;color:#cfe0ff;font-size:.82rem;letter-spacing:.4px
+    }
+    .name{margin:10px 0 4px;font-size:1.12rem;font-weight:800;line-height:1.25}
+    .sector{color:var(--muted);font-size:.92rem}
+    .price-box{text-align:right;min-width:112px}
+    .price{font-size:1.55rem;font-weight:800;letter-spacing:.2px}
+    .price-label{font-size:.8rem;color:var(--muted);margin-top:4px}
+    .moat{
+      margin:12px 0 16px;padding:12px 13px;border:1px solid rgba(255,255,255,.05);border-radius:14px;
+      background:rgba(255,255,255,.025)
+    }
+    .moat strong{display:block;font-size:.83rem;color:#bfd0f6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+    .moat span{color:#dbe7ff;font-size:.94rem;line-height:1.45}
+    .metrics{display:grid;grid-template-columns:1fr;gap:14px}
+    .metric{
+      background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:13px 14px
+    }
+    .metric-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+    .metric-title{
+      display:inline-flex;align-items:center;gap:8px;font-size:.92rem;font-weight:700
+    }
+    .help{
+      position:relative;display:inline-flex;align-items:center;justify-content:center;
+      width:18px;height:18px;border-radius:50%;background:#1b2946;border:1px solid #2d3e64;color:#b8c8ea;
+      font-size:.75rem;cursor:help;flex:0 0 auto
+    }
+    .help::after{
+      content:attr(data-tip);position:absolute;left:50%;bottom:125%;transform:translateX(-50%) translateY(6px);
+      min-width:220px;max-width:280px;padding:10px 12px;border-radius:10px;background:#0a1222;border:1px solid #314468;
+      color:#e8eefc;font-size:.8rem;line-height:1.35;opacity:0;pointer-events:none;transition:.18s ease;box-shadow:var(--shadow);z-index:10
+    }
+    .help:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
+    .metric-value{font-size:.88rem;color:var(--muted)}
+    .signal{font-weight:800}
+    .signal.bull{color:var(--green)}
+    .signal.neutral{color:var(--yellow)}
+    .signal.bear{color:var(--red)}
+    .gauge-row{display:flex;align-items:center;gap:12px}
+    .gauge-wrap{width:74px;height:74px;position:relative;flex:0 0 auto}
+    .gauge-svg{width:74px;height:74px;transform:rotate(-90deg)}
+    .gauge-bg{fill:none;stroke:#23324f;stroke-width:8}
+    .gauge-fg{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .6s ease,stroke .3s ease}
+    .gauge-label{
+      position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column
+    }
+    .gauge-label .big{font-size:1rem;font-weight:800}
+    .gauge-label .small{font-size:.68rem;color:var(--muted);margin-top:1px}
+    .gauge-text{font-size:.9rem;color:var(--muted);line-height:1.45}
+    .bars{display:grid;gap:10px}
+    .bar-track{
+      width:100%;height:11px;background:#0d1528;border:1px solid #223252;border-radius:999px;overflow:hidden;position:relative
+    }
+    .bar-fill{height:100%;border-radius:999px;transition:width .5s ease}
+    .legend{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.78rem;color:var(--muted);margin-top:6px}
+    .score-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .score-pill{
+      display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.08);
+      font-weight:800
+    }
+    .score-pill.green{background:rgba(34,197,94,.12);color:#a8f0bf}
+    .score-pill.yellow{background:rgba(245,158,11,.12);color:#ffd793}
+    .score-pill.red{background:rgba(239,68,68,.12);color:#ffb3b3}
+    .score-num{font-size:1.25rem;font-weight:900}
+    .sub-note{margin-top:8px;font-size:.78rem;color:var(--muted)}
+    .footer{
+      margin-top:24px;padding:18px 20px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+      color:var(--muted);font-size:.9rem;text-align:center
+    }
+    .empty,.error{
+      grid-column:1/-1;padding:20px;border-radius:18px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#ffd1d1
+    }
+
+    .skeleton-card{
+      background:linear-gradient(180deg,rgba(18,26,46,.95),rgba(14,21,38,.95));
+      border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)
+    }
+    .skeleton{
+      position:relative;overflow:hidden;background:#1a2641;border-radius:12px
+    }
+    .skeleton::after{
+      content:"";position:absolute;inset:0;transform:translateX(-100%);
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
+      animation:shine 1.35s infinite
+    }
+    @keyframes shine{100%{transform:translateX(100%)}}
+    .sk-line{height:14px;margin-bottom:10px}
+    .sk-pill{width:82px;height:30px;border-radius:999px;margin-bottom:14px}
+    .sk-title{height:24px;width:65%;margin-bottom:12px}
+    .sk-sub{height:14px;width:40%;margin-bottom:18px}
+    .sk-block{height:78px;border-radius:14px;margin-bottom:14px}
+    .sk-metric{height:96px;border-radius:16px;margin-bottom:12px}
+    .small-muted{font-size:.78rem;color:var(--muted)}
+    .updated{font-variant-numeric:tabular-nums}
+
+    @media (max-width:640px){
+      .container{padding:16px 14px 70px}
+      .header{padding:18px}
+      .card{padding:16px}
+      .price{font-size:1.35rem}
+      .top{align-items:flex-start}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title-wrap">
+        <h1>Aktien-Screener</h1>
+        <p>Live-Kurse, technische Signale und regelbasierter Bewertungs-Score für dein Portfolio.</p>
+      </div>
+      <div class="controls">
+        <div class="badge"><span class="dot"></span><span id="statusText">Bereit</span></div>
+        <div class="badge updated">Letztes Update: <span id="lastUpdated">–</span></div>
+        <button id="refreshBtn">Kurse aktualisieren</button>
+      </div>
+    </div>
+
+    <div id="grid" class="grid"></div>
+
+    <div class="footer">
+      Keine Anlageberatung, nur zur Information.
+    </div>
+  </div>
+
+  <script>
+    const STOCKS = [
+      { ticker: "ALV", yahoo: "ALV.DE", name: "Allianz", sector: "Versicherung", moat: "Stark – globale Marke, Skaleneffekte, Kapitalstärke" },
+      { ticker: "MO", yahoo: "MO", name: "Altria Group", sector: "Tabak", moat: "Stark – Preissetzungsmacht, hohe Eintrittsbarrieren" },
+      { ticker: "ARCC", yahoo: "ARCC", name: "Ares Capital", sector: "BDC", moat: "Mittel – Netzwerk & Dealflow, aber kreditzyklisch" },
+      { ticker: "BXSL", yahoo: "BXSL", name: "Blackstone Secured Lending Fund", sector: "BDC", moat: "Mittel–Stark – Blackstone-Plattform als Vorteil" },
+      { ticker: "OBDC", yahoo: "OBDC", name: "Blue Owl Capital Corporation", sector: "BDC", moat: "Mittel – Skaleneffekte, aber Wettbewerb hoch" },
+      { ticker: "BATS", yahoo: "BATS.L", name: "British American Tobacco", sector: "Tabak", moat: "Stark – Globale Marken & starke Cashflows" },
+      { ticker: "CSWC", yahoo: "CSWC", name: "Capital Southwest", sector: "BDC", moat: "Mittel – Nischenfokus im Lower Middle Market" },
+      { ticker: "D05", yahoo: "D05.SI", name: "DBS Group Holdings", sector: "Bank", moat: "Stark – Marktführer in Singapur" },
+      { ticker: "ENB", yahoo: "ENB", name: "Enbridge", sector: "Energie-Infrastruktur", moat: "Stark – Pipeline-Netzwerk, regulierte Cashflows" },
+      { ticker: "GIS", yahoo: "GIS", name: "General Mills", sector: "Basiskonsumgüter", moat: "Mittel–Stark – Starkes Markenportfolio" },
+      { ticker: "HTGC", yahoo: "HTGC", name: "Hercules Capital", sector: "BDC", moat: "Mittel – Spezialisierung im Venture-Lending" },
+      { ticker: "HSBA", yahoo: "HSBA.L", name: "HSBC Holdings", sector: "Bank", moat: "Mittel–Stark – starke Asien-Präsenz" },
+      { ticker: "LYB", yahoo: "LYB", name: "LyondellBasell", sector: "Chemie", moat: "Mittel – Kostenvorteile, aber zyklisch" },
+      { ticker: "MAIN", yahoo: "MAIN", name: "Main Street Capital", sector: "BDC", moat: "Stark (BDC) – internes Management, Historie" },
+      { ticker: "MUV2", yahoo: "MUV2.DE", name: "Münchener Rück", sector: "Rückversicherung", moat: "Stark – Datenvorsprung & Kapitalstärke" },
+      { ticker: "NN", yahoo: "NN.AS", name: "NN Group", sector: "Versicherung", moat: "Mittel – solide Position, wenig Differenzierung" },
+      { ticker: "NOVO-B", yahoo: "NOVO-B.CO", name: "Novo Nordisk", sector: "Pharma", moat: "Sehr stark – Patentportfolio & Marktführerschaft" },
+      { ticker: "OHI", yahoo: "OHI", name: "Omega Healthcare Investors", sector: "REIT (Healthcare)", moat: "Mittel – Spezialisierung, Mieterabhängigkeit" },
+      { ticker: "OMV", yahoo: "OMV.VI", name: "OMV", sector: "Energie", moat: "Mittel – integriertes Modell, zyklisch" },
+      { ticker: "PFE", yahoo: "PFE", name: "Pfizer", sector: "Pharma", moat: "Stark – Pipeline & globale Vertriebsstruktur" },
+      { ticker: "O", yahoo: "O", name: "Realty Income", sector: "REIT (Net Lease)", moat: "Stark – Triple-Net-Modell & Diversifikation" },
+      { ticker: "STWD", yahoo: "STWD", name: "Starwood Property Trust", sector: "Mortgage REIT", moat: "Mittel – stark zinsabhängig" },
+      { ticker: "VZ", yahoo: "VZ", name: "Verizon Communications", sector: "Telekommunikation", moat: "Stark – Netzwerkinfrastruktur & Wechselkosten" },
+      { ticker: "VICI", yahoo: "VICI", name: "Vici Properties", sector: "REIT (Gaming/Experiential)", moat: "Stark – langfristige Triple-Net-Verträge" }
+    ];
+
+    const grid = document.getElementById('grid');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const statusText = document.getElementById('statusText');
+    const lastUpdated = document.getElementById('lastUpdated');
+
+    function renderSkeletons(count = 12) {
+      grid.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement('div');
+        el.className = 'skeleton-card';
+        el.innerHTML = `
+          <div class="skeleton sk-pill"></div>
+          <div class="skeleton sk-title"></div>
+          <div class="skeleton sk-sub"></div>
+          <div class="skeleton sk-block"></div>
+          <div class="skeleton sk-metric"></div>
+          <div class="skeleton sk-metric"></div>
+          <div class="skeleton sk-metric"></div>
+        `;
+        grid.appendChild(el);
+      }
+    }
+
+    function formatNumber(value, digits = 2) {
+      if (value == null || Number.isNaN(value)) return '–';
+      return new Intl.NumberFormat('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
+    }
+
+    function formatPrice(value) {
+      if (value == null || Number.isNaN(value)) return '–';
+      const digits = value >= 100 ? 2 : value >= 10 ? 2 : 3;
+      return new Intl.NumberFormat('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
+    }
+
+    function mean(arr) {
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+
+    function stdDev(arr) {
+      const m = mean(arr);
+      const variance = arr.reduce((sum, v) => sum + Math.pow(v - m, 2), 0) / arr.length;
+      return Math.sqrt(variance);
+    }
+
+    function sma(values, period) {
+      if (!values || values.length < period) return null;
+      const slice = values.slice(-period);
+      return mean(slice);
+    }
+
+    function calcRSI(values, period = 14) {
+      if (!values || values.length < period + 1) return null;
+      let gains = 0;
+      let losses = 0;
+
+      for (let i = 1; i <= period; i++) {
+        const change = values[i] - values[i - 1];
+        if (change >= 0) gains += change;
+        else losses -= change;
+      }
+
+      let avgGain = gains / period;
+      let avgLoss = losses / period;
+
+      for (let i = period + 1; i < values.length; i++) {
+        const change = values[i] - values[i - 1];
+        const gain = Math.max(change, 0);
+        const loss = Math.max(-change, 0);
+        avgGain = ((avgGain * (period - 1)) + gain) / period;
+        avgLoss = ((avgLoss * (period - 1)) + loss) / period;
+      }
+
+      if (avgLoss === 0) return 100;
+      const rs = avgGain / avgLoss;
+      return 100 - (100 / (1 + rs));
+    }
+
+    function calcBollingerPercentB(values, period = 20, mult = 2) {
+      if (!values || values.length < period) return null;
+      const slice = values.slice(-period);
+      const mid = mean(slice);
+      const sd = stdDev(slice);
+      const upper = mid + mult * sd;
+      const lower = mid - mult * sd;
+      if (upper === lower) return 50;
+      const last = values[values.length - 1];
+      return ((last - lower) / (upper - lower)) * 100;
+    }
+
+    function calcCross(values) {
+      if (!values || values.length < 200) return { label: 'Nicht genug Daten', type: 'neutral', sma50: null, sma200: null };
+      const sma50 = sma(values, 50);
+      const sma200 = sma(values, 200);
+      const prevSma50 = mean(values.slice(-51, -1));
+      const prevSma200 = mean(values.slice(-201, -1));
+
+      if (prevSma50 <= prevSma200 && sma50 > sma200) {
+        return { label: 'Golden Cross', type: 'bull', sma50, sma200 };
+      }
+      if (prevSma50 >= prevSma200 && sma50 < sma200) {
+        return { label: 'Death Cross', type: 'bear', sma50, sma200 };
+      }
+      if (sma50 > sma200) {
+        return { label: 'Bullisher Trend', type: 'bull', sma50, sma200 };
+      }
+      if (sma50 < sma200) {
+        return { label: 'Bearisher Trend', type: 'bear', sma50, sma200 };
+      }
+      return { label: 'Neutral', type: 'neutral', sma50, sma200 };
+    }
+
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function scoreStock({ price, rsi, percentB, cross, sma50, sma200 }) {
+      let score = 5;
+
+      if (rsi != null) {
+        if (rsi < 30) score += 2;
+        else if (rsi <= 45) score += 1;
+        else if (rsi > 70) score -= 2;
+        else if (rsi >= 60) score -= 1;
+      }
+
+      if (cross === 'bull') score += 2;
+      else if (cross === 'bear') score -= 2;
+
+      if (percentB != null) {
+        if (percentB < 15) score += 2;
+        else if (percentB < 35) score += 1;
+        else if (percentB > 100) score -= 2;
+        else if (percentB > 85) score -= 1;
+      }
+
+      if (price != null && sma50 != null && sma200 != null) {
+        if (price > sma50 && sma50 > sma200) score += 1;
+        if (price < sma50 && sma50 < sma200) score -= 1;
+      }
+
+      score = clamp(Math.round(score), 1, 10);
+
+      let signal = 'Beobachten';
+      let color = 'yellow';
+      if (score >= 7) { signal = 'Kaufen'; color = 'green'; }
+      else if (score <= 3) { signal = 'Nicht kaufen'; color = 'red'; }
+
+      return { score, signal, color };
+    }
+
+    function gaugeColor(rsi) {
+      if (rsi == null) return '#64748b';
+      if (rsi < 30) return 'var(--green)';
+      if (rsi <= 70) return 'var(--yellow)';
+      return 'var(--red)';
+    }
+
+    function percentBColor(pb) {
+      if (pb == null) return '#64748b';
+      if (pb < 30) return 'linear-gradient(90deg, #22c55e, #4ade80)';
+      if (pb <= 70) return 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+      return 'linear-gradient(90deg, #ef4444, #fb7185)';
+    }
+
+    async function fetchYahooChart(symbol) {
+      const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=1y&interval=1d&includePrePost=false&events=div%2Csplits`;
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`;
+      const res = await fetch(proxyUrl, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      const json = JSON.parse(text);
+
+      const result = json?.chart?.result?.[0];
+      if (!result) {
+        const err = json?.chart?.error?.description || 'Keine Kursdaten verfügbar';
+        throw new Error(err);
+      }
+
+      const closesRaw = result?.indicators?.quote?.[0]?.close || [];
+      const closes = closesRaw.filter(v => typeof v === 'number' && Number.isFinite(v));
+      const meta = result.meta || {};
+      const price = typeof meta.regularMarketPrice === 'number'
+        ? meta.regularMarketPrice
+        : closes[closes.length - 1];
+
+      return { price, closes, currency: meta.currency || '', exchangeName: meta.exchangeName || '' };
+    }
+
+    function createGauge(rsi) {
+      const radius = 28;
+      const circumference = 2 * Math.PI * radius;
+      const value = clamp(rsi ?? 0, 0, 100);
+      const offset = circumference - (value / 100) * circumference;
+      const color = gaugeColor(rsi);
+      return `
+        <div class="gauge-wrap">
+          <svg class="gauge-svg" viewBox="0 0 74 74" aria-hidden="true">
+            <circle class="gauge-bg" cx="37" cy="37" r="${radius}"></circle>
+            <circle class="gauge-fg" cx="37" cy="37" r="${radius}"
+              stroke="${color}"
+              stroke-dasharray="${circumference}"
+              stroke-dashoffset="${offset}"></circle>
+          </svg>
+          <div class="gauge-label">
+            <div class="big">${rsi == null ? '–' : Math.round(rsi)}</div>
+            <div class="small">RSI</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function getRsiText(rsi) {
+      if (rsi == null) return 'Keine Daten';
+      if (rsi < 30) return 'Überverkauft';
+      if (rsi <= 70) return 'Neutral';
+      return 'Überkauft';
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function renderCard(stock, data, error = null) {
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      if (error) {
+        card.innerHTML = `
+          <div class="top">
+            <div class="identity">
+              <div class="ticker">${escapeHtml(stock.ticker)}</div>
+              <div class="name">${escapeHtml(stock.name)}</div>
+              <div class="sector">${escapeHtml(stock.sector)}</div>
+            </div>
+            <div class="price-box">
+              <div class="price">–</div>
+              <div class="price-label">Fehler beim Laden</div>
+            </div>
+          </div>
+          <div class="moat">
+            <strong>Burggraben</strong>
+            <span>${escapeHtml(stock.moat)}</span>
+          </div>
+          <div class="error">Kursdaten konnten nicht geladen werden: ${escapeHtml(error.message || 'Unbekannter Fehler')}</div>
+        `;
+        return card;
+      }
+
+      const { price, closes, currency } = data;
+      const rsi = calcRSI(closes, 14);
+      const crossData = calcCross(closes);
+      const pb = calcBollingerPercentB(closes, 20, 2);
+      const scoreData = scoreStock({
+        price,
+        rsi,
+        percentB: pb,
+        cross: crossData.type,
+        sma50: crossData.sma50,
+        sma200: crossData.sma200
+      });
+
+      const pbDisplay = pb == null ? '–' : `${Math.round(pb)}%`;
+      const pbWidth = clamp(pb ?? 0, 0, 100);
+      const pbGradient = percentBColor(pb);
+
+      card.innerHTML = `
+        <div class="top">
+          <div class="identity">
+            <div class="ticker">${escapeHtml(stock.ticker)}</div>
+            <div class="name">${escapeHtml(stock.name)}</div>
+            <div class="sector">${escapeHtml(stock.sector)}</div>
+          </div>
+          <div class="price-box">
+            <div class="price">${formatPrice(price)}</div>
+            <div class="price-label">${currency ? escapeHtml(currency) : 'Kurs'}</div>
+          </div>
+        </div>
+
+        <div class="moat">
+          <strong>Burggraben</strong>
+          <span>${escapeHtml(stock.moat)}</span>
+        </div>
+
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-header">
+              <div class="metric-title">
+                RSI (14)
+                <span class="help" data-tip="Relative-Stärke-Index der letzten 14 Perioden. Nach deiner Vorgabe: Grün unter 30, Gelb zwischen 30 und 70, Rot über 70.">?</span>
+              </div>
+              <div class="metric-value">${getRsiText(rsi)}</div>
+            </div>
+            <div class="gauge-row">
+              ${createGauge(rsi)}
+              <div class="gauge-text">
+                <div><strong>${rsi == null ? '–' : formatNumber(rsi, 1)}</strong></div>
+                <div>Momentum-Indikator für überverkaufte oder überkaufte Situationen.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="metric">
+            <div class="metric-header">
+              <div class="metric-title">
+                SMA50 / SMA200
+                <span class="help" data-tip="Vergleich des 50-Tage- mit dem 200-Tage-Durchschnitt. Golden Cross gilt als bullishes Signal, Death Cross als bearishes Signal.">?</span>
+              </div>
+              <div class="metric-value"><span class="signal ${crossData.type}">${crossData.label}</span></div>
+            </div>
+            <div class="bars">
+              <div>
+                <div class="small-muted">SMA50: <strong>${formatNumber(crossData.sma50, 2)}</strong></div>
+                <div class="small-muted">SMA200: <strong>${formatNumber(crossData.sma200, 2)}</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="metric">
+            <div class="metric-header">
+              <div class="metric-title">
+                Bollinger %B
+                <span class="help" data-tip="Zeigt die aktuelle Position des Kurses innerhalb der Bollinger-Bänder. Niedrige Werte bedeuten Nähe zum unteren Band, hohe Werte Nähe zum oberen Band.">?</span>
+              </div>
+              <div class="metric-value">${pbDisplay}</div>
+            </div>
+            <div class="bar-track" aria-label="Bollinger Prozent-B">
+              <div class="bar-fill" style="width:${pbWidth}%;background:${pbGradient};"></div>
+            </div>
+            <div class="legend">
+              <span>Unteres Band</span>
+              <span>Mitte</span>
+              <span>Oberes Band</span>
+            </div>
+          </div>
+
+          <div class="metric">
+            <div class="metric-header">
+              <div class="metric-title">
+                Bewertungs-Score
+                <span class="help" data-tip="Regelbasierter Score von 1 bis 10 aus RSI, Trend und Bollinger-Lage. Grün: Kaufen (7-10), Gelb: Beobachten (4-6), Rot: Nicht kaufen (1-3).">?</span>
+              </div>
+              <div class="metric-value">1 bis 10</div>
+            </div>
+            <div class="score-row">
+              <div class="score-pill ${scoreData.color}">
+                <span class="score-num">${scoreData.score}</span>
+                <span>${scoreData.signal}</span>
+              </div>
+              <div class="small-muted">
+                <div>Trend: <span class="signal ${crossData.type}">${crossData.label}</span></div>
+                <div>RSI: ${rsi == null ? '–' : formatNumber(rsi, 1)} · %B: ${pb == null ? '–' : formatNumber(pb, 0)}%</div>
+              </div>
+            </div>
+            <div class="sub-note">Technischer Schnellcheck auf Basis der aktuellen Kursdaten.</div>
+          </div>
+        </div>
+      `;
+      return card;
+    }
+
+    async function loadData() {
+      refreshBtn.disabled = true;
+      statusText.textContent = 'Kurse werden geladen …';
+      renderSkeletons(Math.min(STOCKS.length, 12));
+
+      try {
+        const results = await Promise.allSettled(
+          STOCKS.map(stock => fetchYahooChart(stock.yahoo))
+        );
+
+        grid.innerHTML = '';
+        let okCount = 0;
+
+        results.forEach((result, index) => {
+          const stock = STOCKS[index];
+          if (result.status === 'fulfilled') {
+            okCount++;
+            grid.appendChild(renderCard(stock, result.value));
+          } else {
+            grid.appendChild(renderCard(stock, null, result.reason));
+          }
+        });
+
+        statusText.textContent = `${okCount}/${STOCKS.length} Kurse geladen`;
+        lastUpdated.textContent = new Intl.DateTimeFormat('de-DE', {
+          dateStyle: 'short',
+          timeStyle: 'medium'
+        }).format(new Date());
+      } catch (err) {
+        grid.innerHTML = `<div class="empty">Beim Laden ist ein Fehler aufgetreten: ${escapeHtml(err.message || 'Unbekannter Fehler')}</div>`;
+        statusText.textContent = 'Fehler beim Laden';
+      } finally {
+        refreshBtn.disabled = false;
+      }
+    }
+
+    refreshBtn.addEventListener('click', loadData);
+    loadData();
+  </script>
+</body>
+</html>

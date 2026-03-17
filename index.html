@@ -1,623 +1,567 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aktien-Screener</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aktien‑Screener Agent</title>
   <style>
     :root{
-      --bg:#0b1020;
-      --panel:#121a2e;
-      --panel-2:#17223b;
-      --border:#243251;
-      --text:#e8eefc;
-      --muted:#9fb0d1;
-      --green:#22c55e;
-      --yellow:#f59e0b;
-      --red:#ef4444;
-      --blue:#60a5fa;
-      --cyan:#22d3ee;
-      --shadow:0 12px 30px rgba(0,0,0,.35);
-      --radius:18px;
+      --bg:#0c1116; --panel:#121820; --panel-2:#0f151d; --text:#e7eef5;
+      --muted:#9fb3c8; --accent:#2dd4bf; --warn:#fbbf24; --danger:#ef4444; --ok:#22c55e;
+      --border:#1f2a37; --shadow:0 6px 24px rgba(0,0,0,.25);
     }
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:radial-gradient(circle at top right,#17223f 0%,#0b1020 35%,#090d1a 100%);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-    body{min-height:100vh}
-    .container{max-width:1560px;margin:0 auto;padding:28px 20px 80px}
-    .header{
-      display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
-      margin-bottom:22px;padding:22px 24px;border:1px solid rgba(255,255,255,.06);
-      background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
-      border-radius:24px;box-shadow:var(--shadow);backdrop-filter:blur(12px)
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,Segoe UI,Roboto}
+    header{padding:20px;position:sticky;top:0;z-index:2;background:linear-gradient(180deg,var(--bg),rgba(12,17,22,.75) 70%,transparent)}
+    .wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+    h1{font-size:20px;margin:0 0 10px}
+    .searchbar{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center}
+    input[type=text]{padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text)}
+    button{padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer}
+    button.primary{background:linear-gradient(180deg,#1b2937,#101621);border-color:#243244}
+    button:hover{filter:brightness(1.08)}
+    main{padding:10px 0 40px}
+    .grid{display:grid;gap:14px;grid-template-columns:repeat(12,1fr)}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:16px}
+    .kpi{display:flex;flex-direction:column;gap:8px}
+    .muted{color:var(--muted)}
+    .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .badge{padding:4px 8px;border-radius:999px;border:1px solid var(--border);background:var(--panel-2);font-size:12px}
+    .skeleton{position:relative;overflow:hidden;background:#0e141b;border-radius:10px;height:16px}
+    .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);animation:shimmer 1.2s infinite}
+    @keyframes shimmer{100%{transform:translateX(100%)}}
+    .loader-block{display:grid;gap:10px}
+    .section-title{margin:8px 0 10px;font-weight:600}
+    .pill{padding:6px 10px;border-radius:999px;font-size:12px}
+    .pill.ok{background:#072c1a;color:#a8ffcf;border:1px solid #115e3a}
+    .pill.warn{background:#392d06;color:#ffe8a8;border:1px solid #805f00}
+    .pill.danger{background:#3b0c0c;color:#ffb3b3;border:1px solid #7f1d1d}
+    .progress{height:18px;background:#0e141b;border-radius:999px;overflow:hidden;border:1px solid var(--border)}
+    .progress > span{display:block;height:100%;background:linear-gradient(90deg,#2563eb,#22c55e);width:0%}
+    .tooltip{position:relative;display:inline-flex;align-items:center;gap:6px;cursor:help}
+    .tooltip .tip{
+      position:absolute;left:50%;transform:translateX(-50%);bottom:120%;
+      background:#101621;border:1px solid var(--border);padding:8px 10px;border-radius:8px;
+      color:#c6d2df;font-size:12px;width:max(220px,24ch);box-shadow:var(--shadow);display:none;z-index:5
     }
-    .title-wrap h1{margin:0;font-size:clamp(1.5rem,2vw,2.3rem);letter-spacing:.2px}
-    .title-wrap p{margin:8px 0 0;color:var(--muted);font-size:.98rem}
-    .controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-    .badge{
-      display:inline-flex;align-items:center;gap:8px;background:#10192d;border:1px solid var(--border);
-      color:var(--muted);padding:10px 14px;border-radius:999px;font-size:.92rem
-    }
-    .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 6px rgba(34,211,238,.12)}
-    button{
-      appearance:none;border:none;cursor:pointer;color:#08111f;background:linear-gradient(135deg,#7dd3fc,#60a5fa);
-      font-weight:700;padding:12px 16px;border-radius:14px;font-size:.95rem;box-shadow:0 10px 22px rgba(96,165,250,.25);
-      transition:transform .15s ease,box-shadow .15s ease,opacity .15s ease
-    }
-    button:hover{transform:translateY(-1px);box-shadow:0 14px 26px rgba(96,165,250,.35)}
-    button:disabled{opacity:.55;cursor:not-allowed;transform:none}
-    .grid{
-      display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px
-    }
-    .card{
-      background:linear-gradient(180deg,rgba(18,26,46,.95),rgba(14,21,38,.95));
-      border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);
-      position:relative;overflow:hidden
-    }
-    .card::before{
-      content:"";position:absolute;inset:-1px auto auto -1px;width:120px;height:120px;
-      background:radial-gradient(circle,rgba(96,165,250,.14),transparent 70%);pointer-events:none
-    }
-    .top{
-      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px
-    }
-    .identity{min-width:0}
-    .ticker{
-      display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;
-      background:#0e172b;border:1px solid var(--border);font-weight:800;color:#cfe0ff;font-size:.82rem;letter-spacing:.4px
-    }
-    .name{margin:10px 0 4px;font-size:1.12rem;font-weight:800;line-height:1.25}
-    .sector{color:var(--muted);font-size:.92rem}
-    .price-box{text-align:right;min-width:112px}
-    .price{font-size:1.55rem;font-weight:800;letter-spacing:.2px}
-    .price-label{font-size:.8rem;color:var(--muted);margin-top:4px}
-    .moat{
-      margin:12px 0 16px;padding:12px 13px;border:1px solid rgba(255,255,255,.05);border-radius:14px;
-      background:rgba(255,255,255,.025)
-    }
-    .moat strong{display:block;font-size:.83rem;color:#bfd0f6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
-    .moat span{color:#dbe7ff;font-size:.94rem;line-height:1.45}
-    .metrics{display:grid;grid-template-columns:1fr;gap:14px}
-    .metric{
-      background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:13px 14px
-    }
-    .metric-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-    .metric-title{
-      display:inline-flex;align-items:center;gap:8px;font-size:.92rem;font-weight:700
-    }
-    .help{
-      position:relative;display:inline-flex;align-items:center;justify-content:center;
-      width:18px;height:18px;border-radius:50%;background:#1b2946;border:1px solid #2d3e64;color:#b8c8ea;
-      font-size:.75rem;cursor:help;flex:0 0 auto
-    }
-    .help::after{
-      content:attr(data-tip);position:absolute;left:50%;bottom:125%;transform:translateX(-50%) translateY(6px);
-      min-width:220px;max-width:280px;padding:10px 12px;border-radius:10px;background:#0a1222;border:1px solid #314468;
-      color:#e8eefc;font-size:.8rem;line-height:1.35;opacity:0;pointer-events:none;transition:.18s ease;box-shadow:var(--shadow);z-index:10
-    }
-    .help:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
-    .metric-value{font-size:.88rem;color:var(--muted)}
-    .signal{font-weight:800}
-    .signal.bull{color:var(--green)}
-    .signal.neutral{color:var(--yellow)}
-    .signal.bear{color:var(--red)}
-    .gauge-row{display:flex;align-items:center;gap:12px}
-    .gauge-wrap{width:74px;height:74px;position:relative;flex:0 0 auto}
-    .gauge-svg{width:74px;height:74px;transform:rotate(-90deg)}
-    .gauge-bg{fill:none;stroke:#23324f;stroke-width:8}
-    .gauge-fg{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .6s ease,stroke .3s ease}
-    .gauge-label{
-      position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column
-    }
-    .gauge-label .big{font-size:1rem;font-weight:800}
-    .gauge-label .small{font-size:.68rem;color:var(--muted);margin-top:1px}
-    .gauge-text{font-size:.9rem;color:var(--muted);line-height:1.45}
-    .bars{display:grid;gap:10px}
-    .bar-track{
-      width:100%;height:11px;background:#0d1528;border:1px solid #223252;border-radius:999px;overflow:hidden;position:relative
-    }
-    .bar-fill{height:100%;border-radius:999px;transition:width .5s ease}
-    .legend{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.78rem;color:var(--muted);margin-top:6px}
-    .score-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .score-pill{
-      display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.08);
-      font-weight:800
-    }
-    .score-pill.green{background:rgba(34,197,94,.12);color:#a8f0bf}
-    .score-pill.yellow{background:rgba(245,158,11,.12);color:#ffd793}
-    .score-pill.red{background:rgba(239,68,68,.12);color:#ffb3b3}
-    .score-num{font-size:1.25rem;font-weight:900}
-    .sub-note{margin-top:8px;font-size:.78rem;color:var(--muted)}
-    .footer{
-      margin-top:24px;padding:18px 20px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
-      color:var(--muted);font-size:.9rem;text-align:center
-    }
-    .empty,.error{
-      grid-column:1/-1;padding:20px;border-radius:18px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#ffd1d1
-    }
-
-    .skeleton-card{
-      background:linear-gradient(180deg,rgba(18,26,46,.95),rgba(14,21,38,.95));
-      border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)
-    }
-    .skeleton{
-      position:relative;overflow:hidden;background:#1a2641;border-radius:12px
-    }
-    .skeleton::after{
-      content:"";position:absolute;inset:0;transform:translateX(-100%);
-      background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
-      animation:shine 1.35s infinite
-    }
-    @keyframes shine{100%{transform:translateX(100%)}}
-    .sk-line{height:14px;margin-bottom:10px}
-    .sk-pill{width:82px;height:30px;border-radius:999px;margin-bottom:14px}
-    .sk-title{height:24px;width:65%;margin-bottom:12px}
-    .sk-sub{height:14px;width:40%;margin-bottom:18px}
-    .sk-block{height:78px;border-radius:14px;margin-bottom:14px}
-    .sk-metric{height:96px;border-radius:16px;margin-bottom:12px}
-    .small-muted{font-size:.78rem;color:var(--muted)}
-    .updated{font-variant-numeric:tabular-nums}
-
-    @media (max-width:640px){
-      .container{padding:16px 14px 70px}
-      .header{padding:18px}
-      .card{padding:16px}
-      .price{font-size:1.35rem}
-      .top{align-items:flex-start}
-    }
+    .tooltip:hover .tip{display:block}
+    .legend{display:flex;justify-content:space-between;font-size:12px;margin-top:6px;color:var(--muted)}
+    .sep{height:1px;background:var(--border);margin:6px 0 12px}
+    .error{color:#ffb4b4}
+    .areaA{grid-column:span 12}
+    .areaB{grid-column:span 12}
+    @media(min-width:900px){ .areaA{grid-column:span 7} .areaB{grid-column:span 5} }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <div class="title-wrap">
-        <h1>Aktien-Screener</h1>
-        <p>Live-Kurse, technische Signale und regelbasierter Bewertungs-Score für dein Portfolio.</p>
-      </div>
-      <div class="controls">
-        <div class="badge"><span class="dot"></span><span id="statusText">Bereit</span></div>
-        <div class="badge updated">Letztes Update: <span id="lastUpdated">–</span></div>
-        <button id="refreshBtn">Kurse aktualisieren</button>
-      </div>
+<header>
+  <div class="wrap">
+    <h1>Aktien‑Screener Agent</h1>
+    <div class="searchbar">
+      <input id="query" type="text" placeholder="Welche Aktie? (z. B. AAPL, MSFT oder Firmenname)" />
+      <button id="btnSearch" class="primary">Analysieren</button>
+      <button id="btnRefresh">Refresh</button>
     </div>
-
-    <div id="grid" class="grid"></div>
-
-    <div class="footer">
-      Keine Anlageberatung, nur zur Information.
-    </div>
+    <div class="muted" style="margin-top:6px">Tipp: Du kannst auch <code>?symbol=AAPL</code> an die URL hängen.</div>
   </div>
+</header>
 
-  <script>
-    const STOCKS = [
-      { ticker: "ALV", yahoo: "ALV.DE", name: "Allianz", sector: "Versicherung", moat: "Stark – globale Marke, Skaleneffekte, Kapitalstärke" },
-      { ticker: "MO", yahoo: "MO", name: "Altria Group", sector: "Tabak", moat: "Stark – Preissetzungsmacht, hohe Eintrittsbarrieren" },
-      { ticker: "ARCC", yahoo: "ARCC", name: "Ares Capital", sector: "BDC", moat: "Mittel – Netzwerk & Dealflow, aber kreditzyklisch" },
-      { ticker: "BXSL", yahoo: "BXSL", name: "Blackstone Secured Lending Fund", sector: "BDC", moat: "Mittel–Stark – Blackstone-Plattform als Vorteil" },
-      { ticker: "OBDC", yahoo: "OBDC", name: "Blue Owl Capital Corporation", sector: "BDC", moat: "Mittel – Skaleneffekte, aber Wettbewerb hoch" },
-      { ticker: "BATS", yahoo: "BATS.L", name: "British American Tobacco", sector: "Tabak", moat: "Stark – Globale Marken & starke Cashflows" },
-      { ticker: "CSWC", yahoo: "CSWC", name: "Capital Southwest", sector: "BDC", moat: "Mittel – Nischenfokus im Lower Middle Market" },
-      { ticker: "D05", yahoo: "D05.SI", name: "DBS Group Holdings", sector: "Bank", moat: "Stark – Marktführer in Singapur" },
-      { ticker: "ENB", yahoo: "ENB", name: "Enbridge", sector: "Energie-Infrastruktur", moat: "Stark – Pipeline-Netzwerk, regulierte Cashflows" },
-      { ticker: "GIS", yahoo: "GIS", name: "General Mills", sector: "Basiskonsumgüter", moat: "Mittel–Stark – Starkes Markenportfolio" },
-      { ticker: "HTGC", yahoo: "HTGC", name: "Hercules Capital", sector: "BDC", moat: "Mittel – Spezialisierung im Venture-Lending" },
-      { ticker: "HSBA", yahoo: "HSBA.L", name: "HSBC Holdings", sector: "Bank", moat: "Mittel–Stark – starke Asien-Präsenz" },
-      { ticker: "LYB", yahoo: "LYB", name: "LyondellBasell", sector: "Chemie", moat: "Mittel – Kostenvorteile, aber zyklisch" },
-      { ticker: "MAIN", yahoo: "MAIN", name: "Main Street Capital", sector: "BDC", moat: "Stark (BDC) – internes Management, Historie" },
-      { ticker: "MUV2", yahoo: "MUV2.DE", name: "Münchener Rück", sector: "Rückversicherung", moat: "Stark – Datenvorsprung & Kapitalstärke" },
-      { ticker: "NN", yahoo: "NN.AS", name: "NN Group", sector: "Versicherung", moat: "Mittel – solide Position, wenig Differenzierung" },
-      { ticker: "NOVO-B", yahoo: "NOVO-B.CO", name: "Novo Nordisk", sector: "Pharma", moat: "Sehr stark – Patentportfolio & Marktführerschaft" },
-      { ticker: "OHI", yahoo: "OHI", name: "Omega Healthcare Investors", sector: "REIT (Healthcare)", moat: "Mittel – Spezialisierung, Mieterabhängigkeit" },
-      { ticker: "OMV", yahoo: "OMV.VI", name: "OMV", sector: "Energie", moat: "Mittel – integriertes Modell, zyklisch" },
-      { ticker: "PFE", yahoo: "PFE", name: "Pfizer", sector: "Pharma", moat: "Stark – Pipeline & globale Vertriebsstruktur" },
-      { ticker: "O", yahoo: "O", name: "Realty Income", sector: "REIT (Net Lease)", moat: "Stark – Triple-Net-Modell & Diversifikation" },
-      { ticker: "STWD", yahoo: "STWD", name: "Starwood Property Trust", sector: "Mortgage REIT", moat: "Mittel – stark zinsabhängig" },
-      { ticker: "VZ", yahoo: "VZ", name: "Verizon Communications", sector: "Telekommunikation", moat: "Stark – Netzwerkinfrastruktur & Wechselkosten" },
-      { ticker: "VICI", yahoo: "VICI", name: "Vici Properties", sector: "REIT (Gaming/Experiential)", moat: "Stark – langfristige Triple-Net-Verträge" }
-    ];
+<main class="wrap">
+  <div id="status"></div>
+  <div class="grid">
+    <section class="card areaA">
+      <div id="companyHeader" class="kpi">
+        <!-- Loader -->
+        <div class="loader-block" id="skeleton-header">
+          <div class="skeleton" style="height:26px;width:60%"></div>
+          <div class="skeleton" style="width:40%"></div>
+          <div class="skeleton" style="width:80%"></div>
+        </div>
 
-    const grid = document.getElementById('grid');
-    const refreshBtn = document.getElementById('refreshBtn');
-    const statusText = document.getElementById('statusText');
-    const lastUpdated = document.getElementById('lastUpdated');
+        <!-- Meta -->
+        <div id="companyMeta" style="display:none">
+          <div class="row">
+            <div class="badge" id="metaSymbol">—</div>
+            <!-- ▼ Vollständiger Name -->
+            <div class="badge" id="metaName">—</div>
 
-    function renderSkeletons(count = 12) {
-      grid.innerHTML = '';
-      for (let i = 0; i < count; i++) {
-        const el = document.createElement('div');
-        el.className = 'skeleton-card';
-        el.innerHTML = `
-          <div class="skeleton sk-pill"></div>
-          <div class="skeleton sk-title"></div>
-          <div class="skeleton sk-sub"></div>
-          <div class="skeleton sk-block"></div>
-          <div class="skeleton sk-metric"></div>
-          <div class="skeleton sk-metric"></div>
-          <div class="skeleton sk-metric"></div>
-        `;
-        grid.appendChild(el);
-      }
-    }
+            <!-- ▼ Qualitativer Sektor (Sub‑Industry‑Like) -->
+            <div class="tooltip">
+              <div class="badge" id="metaSector">Sektor (qualitativ): —</div>
+              <div class="tip">
+                Abgeleitet aus Yahoo‑„Industry“, normalisiert auf GICS‑Logik (z. B. Insurance, Tobacco, REIT, BDC). GICS wird von MSCI &amp; S&amp;P gepflegt. [1](https://en.wikipedia.org/wiki/Bollinger_Bands)[2](https://trendspider.com/learning-center/bollinger-band-width-and-b-an-overview/)
+              </div>
+            </div>
 
-    function formatNumber(value, digits = 2) {
-      if (value == null || Number.isNaN(value)) return '–';
-      return new Intl.NumberFormat('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
-    }
+            <!-- ▼ Burggraben‑Badge -->
+            <div class="tooltip">
+              <div class="badge" id="metaMoat">Burggraben: —</div>
+              <div class="tip">
+                Morningstar Moat (Wide/Narrow/None) → Stark/Mittel/Schwach; plus kurze qualitative Begründung aus Firmenprofil. [3](https://origin2.cdn.componentsource.com/sites/default/files/resources/dundas/538216/Documentation/Bollinger.html)
+              </div>
+            </div>
+          </div>
+          <!-- Kurzbegründung Burggraben -->
+          <div class="muted" id="metaMoatExplain"></div>
 
-    function formatPrice(value) {
-      if (value == null || Number.isNaN(value)) return '–';
-      const digits = value >= 100 ? 2 : value >= 10 ? 2 : 3;
-      return new Intl.NumberFormat('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
-    }
-
-    function mean(arr) {
-      return arr.reduce((a, b) => a + b, 0) / arr.length;
-    }
-
-    function stdDev(arr) {
-      const m = mean(arr);
-      const variance = arr.reduce((sum, v) => sum + Math.pow(v - m, 2), 0) / arr.length;
-      return Math.sqrt(variance);
-    }
-
-    function sma(values, period) {
-      if (!values || values.length < period) return null;
-      const slice = values.slice(-period);
-      return mean(slice);
-    }
-
-    function calcRSI(values, period = 14) {
-      if (!values || values.length < period + 1) return null;
-      let gains = 0;
-      let losses = 0;
-
-      for (let i = 1; i <= period; i++) {
-        const change = values[i] - values[i - 1];
-        if (change >= 0) gains += change;
-        else losses -= change;
-      }
-
-      let avgGain = gains / period;
-      let avgLoss = losses / period;
-
-      for (let i = period + 1; i < values.length; i++) {
-        const change = values[i] - values[i - 1];
-        const gain = Math.max(change, 0);
-        const loss = Math.max(-change, 0);
-        avgGain = ((avgGain * (period - 1)) + gain) / period;
-        avgLoss = ((avgLoss * (period - 1)) + loss) / period;
-      }
-
-      if (avgLoss === 0) return 100;
-      const rs = avgGain / avgLoss;
-      return 100 - (100 / (1 + rs));
-    }
-
-    function calcBollingerPercentB(values, period = 20, mult = 2) {
-      if (!values || values.length < period) return null;
-      const slice = values.slice(-period);
-      const mid = mean(slice);
-      const sd = stdDev(slice);
-      const upper = mid + mult * sd;
-      const lower = mid - mult * sd;
-      if (upper === lower) return 50;
-      const last = values[values.length - 1];
-      return ((last - lower) / (upper - lower)) * 100;
-    }
-
-    function calcCross(values) {
-      if (!values || values.length < 200) return { label: 'Nicht genug Daten', type: 'neutral', sma50: null, sma200: null };
-      const sma50 = sma(values, 50);
-      const sma200 = sma(values, 200);
-      const prevSma50 = mean(values.slice(-51, -1));
-      const prevSma200 = mean(values.slice(-201, -1));
-
-      if (prevSma50 <= prevSma200 && sma50 > sma200) {
-        return { label: 'Golden Cross', type: 'bull', sma50, sma200 };
-      }
-      if (prevSma50 >= prevSma200 && sma50 < sma200) {
-        return { label: 'Death Cross', type: 'bear', sma50, sma200 };
-      }
-      if (sma50 > sma200) {
-        return { label: 'Bullisher Trend', type: 'bull', sma50, sma200 };
-      }
-      if (sma50 < sma200) {
-        return { label: 'Bearisher Trend', type: 'bear', sma50, sma200 };
-      }
-      return { label: 'Neutral', type: 'neutral', sma50, sma200 };
-    }
-
-    function clamp(n, min, max) {
-      return Math.max(min, Math.min(max, n));
-    }
-
-    function scoreStock({ price, rsi, percentB, cross, sma50, sma200 }) {
-      let score = 5;
-
-      if (rsi != null) {
-        if (rsi < 30) score += 2;
-        else if (rsi <= 45) score += 1;
-        else if (rsi > 70) score -= 2;
-        else if (rsi >= 60) score -= 1;
-      }
-
-      if (cross === 'bull') score += 2;
-      else if (cross === 'bear') score -= 2;
-
-      if (percentB != null) {
-        if (percentB < 15) score += 2;
-        else if (percentB < 35) score += 1;
-        else if (percentB > 100) score -= 2;
-        else if (percentB > 85) score -= 1;
-      }
-
-      if (price != null && sma50 != null && sma200 != null) {
-        if (price > sma50 && sma50 > sma200) score += 1;
-        if (price < sma50 && sma50 < sma200) score -= 1;
-      }
-
-      score = clamp(Math.round(score), 1, 10);
-
-      let signal = 'Beobachten';
-      let color = 'yellow';
-      if (score >= 7) { signal = 'Kaufen'; color = 'green'; }
-      else if (score <= 3) { signal = 'Nicht kaufen'; color = 'red'; }
-
-      return { score, signal, color };
-    }
-
-    function gaugeColor(rsi) {
-      if (rsi == null) return '#64748b';
-      if (rsi < 30) return 'var(--green)';
-      if (rsi <= 70) return 'var(--yellow)';
-      return 'var(--red)';
-    }
-
-    function percentBColor(pb) {
-      if (pb == null) return '#64748b';
-      if (pb < 30) return 'linear-gradient(90deg, #22c55e, #4ade80)';
-      if (pb <= 70) return 'linear-gradient(90deg, #f59e0b, #fbbf24)';
-      return 'linear-gradient(90deg, #ef4444, #fb7185)';
-    }
-
-    async function fetchYahooChart(symbol) {
-      const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=1y&interval=1d&includePrePost=false&events=div%2Csplits`;
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`;
-      const res = await fetch(proxyUrl, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const text = await res.text();
-      const json = JSON.parse(text);
-
-      const result = json?.chart?.result?.[0];
-      if (!result) {
-        const err = json?.chart?.error?.description || 'Keine Kursdaten verfügbar';
-        throw new Error(err);
-      }
-
-      const closesRaw = result?.indicators?.quote?.[0]?.close || [];
-      const closes = closesRaw.filter(v => typeof v === 'number' && Number.isFinite(v));
-      const meta = result.meta || {};
-      const price = typeof meta.regularMarketPrice === 'number'
-        ? meta.regularMarketPrice
-        : closes[closes.length - 1];
-
-      return { price, closes, currency: meta.currency || '', exchangeName: meta.exchangeName || '' };
-    }
-
-    function createGauge(rsi) {
-      const radius = 28;
-      const circumference = 2 * Math.PI * radius;
-      const value = clamp(rsi ?? 0, 0, 100);
-      const offset = circumference - (value / 100) * circumference;
-      const color = gaugeColor(rsi);
-      return `
-        <div class="gauge-wrap">
-          <svg class="gauge-svg" viewBox="0 0 74 74" aria-hidden="true">
-            <circle class="gauge-bg" cx="37" cy="37" r="${radius}"></circle>
-            <circle class="gauge-fg" cx="37" cy="37" r="${radius}"
-              stroke="${color}"
-              stroke-dasharray="${circumference}"
-              stroke-dashoffset="${offset}"></circle>
-          </svg>
-          <div class="gauge-label">
-            <div class="big">${rsi == null ? '–' : Math.round(rsi)}</div>
-            <div class="small">RSI</div>
+          <!-- Hinweiszeile -->
+          <div class="muted" id="metaNote" style="margin-top:6px">
+            Quellen: GICS (MSCI &amp; S&amp;P Global), Morningstar‑Moat, Yahoo Finance Profil/Industry (qualitativ). [1](https://en.wikipedia.org/wiki/Bollinger_Bands)[2](https://trendspider.com/learning-center/bollinger-band-width-and-b-an-overview/)[5](https://kiko.io/notes/2023/avoid-cors-problems-with-allorgins/)
           </div>
         </div>
-      `;
-    }
+      </div>
 
-    function getRsiText(rsi) {
-      if (rsi == null) return 'Keine Daten';
-      if (rsi < 30) return 'Überverkauft';
-      if (rsi <= 70) return 'Neutral';
-      return 'Überkauft';
-    }
+      <div class="sep"></div>
 
-    function escapeHtml(str) {
-      return String(str)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
-    }
-
-    function renderCard(stock, data, error = null) {
-      const card = document.createElement('div');
-      card.className = 'card';
-
-      if (error) {
-        card.innerHTML = `
-          <div class="top">
-            <div class="identity">
-              <div class="ticker">${escapeHtml(stock.ticker)}</div>
-              <div class="name">${escapeHtml(stock.name)}</div>
-              <div class="sector">${escapeHtml(stock.sector)}</div>
-            </div>
-            <div class="price-box">
-              <div class="price">–</div>
-              <div class="price-label">Fehler beim Laden</div>
-            </div>
+      <!-- Signale -->
+      <div class="grid" style="grid-template-columns:repeat(12,1fr);gap:16px">
+        <!-- RSI -->
+        <div class="card" style="grid-column:span 6">
+          <div class="row tooltip">
+            <strong>RSI(14)</strong>
+            <span class="pill ok" id="rsiBadge">—</span>
+            <div class="tip">RSI (14): 0–100; &lt;30 überverkauft (grün), 30–70 neutral (gelb), &gt;70 überkauft (rot). [6](https://www.ssga.com/us/en/institutional/capabilities/equities/sector-investing/gics-sector-and-industry-map)</div>
           </div>
-          <div class="moat">
-            <strong>Burggraben</strong>
-            <span>${escapeHtml(stock.moat)}</span>
+          <div class="gauge" id="rsiGauge"></div>
+          <div class="legend"><span>0</span><span>50</span><span>100</span></div>
+        </div>
+
+        <!-- %B -->
+        <div class="card" style="grid-column:span 6">
+          <div class="row tooltip">
+            <strong>Bollinger %B</strong>
+            <div class="tip">%B = (Preis − LowerBand) / (UpperBand − LowerBand). 0 = unteres Band, 1 = oberes Band. [7](https://invest.howlifeusa.com/bollinger-bands/)</div>
           </div>
-          <div class="error">Kursdaten konnten nicht geladen werden: ${escapeHtml(error.message || 'Unbekannter Fehler')}</div>
-        `;
-        return card;
-      }
+          <div class="progress"><span id="bbBar" style="width:0%"></span></div>
+          <div class="legend"><span>0%</span><span>50%</span><span>100%</span></div>
+          <div class="muted" id="bbText"></div>
+        </div>
 
-      const { price, closes, currency } = data;
-      const rsi = calcRSI(closes, 14);
-      const crossData = calcCross(closes);
-      const pb = calcBollingerPercentB(closes, 20, 2);
-      const scoreData = scoreStock({
-        price,
-        rsi,
-        percentB: pb,
-        cross: crossData.type,
-        sma50: crossData.sma50,
-        sma200: crossData.sma200
-      });
-
-      const pbDisplay = pb == null ? '–' : `${Math.round(pb)}%`;
-      const pbWidth = clamp(pb ?? 0, 0, 100);
-      const pbGradient = percentBColor(pb);
-
-      card.innerHTML = `
-        <div class="top">
-          <div class="identity">
-            <div class="ticker">${escapeHtml(stock.ticker)}</div>
-            <div class="name">${escapeHtml(stock.name)}</div>
-            <div class="sector">${escapeHtml(stock.sector)}</div>
+        <!-- SMA Cross -->
+        <div class="card" style="grid-column:span 6">
+          <div class="row tooltip">
+            <strong>SMA50 / SMA200</strong>
+            <div class="tip">Golden Cross = SMA50 über SMA200 (bullish); Death Cross = SMA50 unter SMA200 (bearish). [8](https://www.silverlightresearch.com/uploads/1/0/2/7/102798756/msci_global_industry_classification_standard_1.pdf)</div>
           </div>
-          <div class="price-box">
-            <div class="price">${formatPrice(price)}</div>
-            <div class="price-label">${currency ? escapeHtml(currency) : 'Kurs'}</div>
+          <div id="smaText" class="kpi">
+            <div class="skeleton" style="width:90%"></div>
+            <div class="skeleton" style="width:70%"></div>
           </div>
         </div>
 
-        <div class="moat">
-          <strong>Burggraben</strong>
-          <span>${escapeHtml(stock.moat)}</span>
+        <!-- Abstand 52W Low -->
+        <div class="card" style="grid-column:span 6">
+          <div class="row tooltip">
+            <strong>Abstand zum 52‑Wochentief</strong>
+            <div class="tip">(Preis − 52W‑Low)/52W‑Low; &lt;10 % grün, 10–20 % gelb, &gt;20 % rot. [9](https://www.investing.com/academy/analysis/relative-strength-index-definition/)</div>
+          </div>
+          <div class="row" id="distRow"></div>
+          <div class="muted" id="distText"></div>
         </div>
+      </div>
+    </section>
 
-        <div class="metrics">
-          <div class="metric">
-            <div class="metric-header">
-              <div class="metric-title">
-                RSI (14)
-                <span class="help" data-tip="Relative-Stärke-Index der letzten 14 Perioden. Nach deiner Vorgabe: Grün unter 30, Gelb zwischen 30 und 70, Rot über 70.">?</span>
-              </div>
-              <div class="metric-value">${getRsiText(rsi)}</div>
-            </div>
-            <div class="gauge-row">
-              ${createGauge(rsi)}
-              <div class="gauge-text">
-                <div><strong>${rsi == null ? '–' : formatNumber(rsi, 1)}</strong></div>
-                <div>Momentum-Indikator für überverkaufte oder überkaufte Situationen.</div>
-              </div>
-            </div>
-          </div>
+    <aside class="card areaB">
+      <div class="section-title">Bewertungs‑Score</div>
+      <div class="ampel">
+        <div class="dot g" id="lightG"></div>
+        <div class="dot y" id="lightY"></div>
+        <div class="dot r" id="lightR"></div>
+        <span id="scoreText" style="font-weight:600">—</span>
+      </div>
+      <div id="scoreExplain" class="muted" style="margin-top:8px"></div>
 
-          <div class="metric">
-            <div class="metric-header">
-              <div class="metric-title">
-                SMA50 / SMA200
-                <span class="help" data-tip="Vergleich des 50-Tage- mit dem 200-Tage-Durchschnitt. Golden Cross gilt als bullishes Signal, Death Cross als bearishes Signal.">?</span>
-              </div>
-              <div class="metric-value"><span class="signal ${crossData.type}">${crossData.label}</span></div>
-            </div>
-            <div class="bars">
-              <div>
-                <div class="small-muted">SMA50: <strong>${formatNumber(crossData.sma50, 2)}</strong></div>
-                <div class="small-muted">SMA200: <strong>${formatNumber(crossData.sma200, 2)}</strong></div>
-              </div>
-            </div>
-          </div>
+      <div class="sep"></div>
 
-          <div class="metric">
-            <div class="metric-header">
-              <div class="metric-title">
-                Bollinger %B
-                <span class="help" data-tip="Zeigt die aktuelle Position des Kurses innerhalb der Bollinger-Bänder. Niedrige Werte bedeuten Nähe zum unteren Band, hohe Werte Nähe zum oberen Band.">?</span>
-              </div>
-              <div class="metric-value">${pbDisplay}</div>
-            </div>
-            <div class="bar-track" aria-label="Bollinger Prozent-B">
-              <div class="bar-fill" style="width:${pbWidth}%;background:${pbGradient};"></div>
-            </div>
-            <div class="legend">
-              <span>Unteres Band</span>
-              <span>Mitte</span>
-              <span>Oberes Band</span>
-            </div>
-          </div>
+      <div class="section-title">Letzter Kurs</div>
+      <div id="priceBlock">
+        <div class="skeleton" style="width:60%"></div>
+      </div>
 
-          <div class="metric">
-            <div class="metric-header">
-              <div class="metric-title">
-                Bewertungs-Score
-                <span class="help" data-tip="Regelbasierter Score von 1 bis 10 aus RSI, Trend und Bollinger-Lage. Grün: Kaufen (7-10), Gelb: Beobachten (4-6), Rot: Nicht kaufen (1-3).">?</span>
-              </div>
-              <div class="metric-value">1 bis 10</div>
-            </div>
-            <div class="score-row">
-              <div class="score-pill ${scoreData.color}">
-                <span class="score-num">${scoreData.score}</span>
-                <span>${scoreData.signal}</span>
-              </div>
-              <div class="small-muted">
-                <div>Trend: <span class="signal ${crossData.type}">${crossData.label}</span></div>
-                <div>RSI: ${rsi == null ? '–' : formatNumber(rsi, 1)} · %B: ${pb == null ? '–' : formatNumber(pb, 0)}%</div>
-              </div>
-            </div>
-            <div class="sub-note">Technischer Schnellcheck auf Basis der aktuellen Kursdaten.</div>
-          </div>
-        </div>
-      `;
-      return card;
+      <footer>
+        <p>⚠️ Keine Anlageberatung. Nur zu Informationszwecken. Märkte sind volatil; eigene Recherche und Risikoabwägung erforderlich.</p>
+      </footer>
+    </aside>
+  </div>
+</main>
+
+<script>
+const qs = (sel, el=document)=>el.querySelector(sel);
+const ALO = "https://api.allorigins.win/get?url="; // AllOrigins proxy
+
+/* ------------------------ Hilfsfunktionen ------------------------ */
+function setStatus(html){ qs("#status").innerHTML = html || ""; }
+function showSkeletonHeader(show){
+  qs("#skeleton-header").style.display = show?"grid":"none";
+  qs("#companyMeta").style.display = show?"none":"block";
+}
+function colorPill(value, low, high){
+  if(value < low) return "ok";
+  if(value > high) return "danger";
+  return "warn";
+}
+function setAmpel(score){
+  const g = qs("#lightG"), y = qs("#lightY"), r = qs("#lightR");
+  g.style.opacity = y.style.opacity = r.style.opacity = .25;
+  if(score>=7){ g.style.opacity=1; }
+  else if(score>=4){ y.style.opacity=1; }
+  else { r.style.opacity=1; }
+}
+function fmt(v, dig=2){ return (v===null||v===undefined)?"—":Number(v).toFixed(dig); }
+
+/* ------------------------ Fetch via Proxy ------------------------ */
+async function fetchJSONViaProxy(url){
+  const res = await fetch(ALO + encodeURIComponent(url));
+  if(!res.ok) throw new Error("Netzwerkfehler Proxy");
+  const data = await res.json();
+  try { return JSON.parse(data.contents); }
+  catch(e){ throw new Error("Ungültige Zielantwort: " + (data && data.contents ? data.contents.slice(0,80)+"..." : "")); }
+}
+
+/* ------------------------ Yahoo Endpoints (inoffiziell) ------------------------ */
+async function getChart(symbol){
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=2y&interval=1d`;
+  return fetchJSONViaProxy(url);
+}
+async function getQuoteSummary(symbol){
+  const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=price,assetProfile,summaryProfile`;
+  return fetchJSONViaProxy(url);
+}
+/* ▼ NEU: Suche, um den vollen Firmennamen zu sichern */
+async function searchYahoo(q){
+  const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}`;
+  return fetchJSONViaProxy(url);
+}
+
+/* ------------------------ GICS-orientierte Sektor-Ableitung (qualitativ) ------------------------
+   Wir nehmen Yahoo 'industry' und mappen auf kurze, sub‑industry‑ähnliche Labels
+   (Insurance, Tobacco, REIT, BDC, Asset Management, Banks, Semiconductors, etc.).
+   Referenz: GICS Struktur/Definition (MSCI / S&P). [1](https://en.wikipedia.org/wiki/Bollinger_Bands)[2](https://trendspider.com/learning-center/bollinger-band-width-and-b-an-overview/) */
+function deriveQualSector(industry, description, name){
+  const text = (industry||"") + " " + (description||"") + " " + (name||"");
+  const has = (rx)=> new RegExp(rx,"i").test(text);
+
+  if(/REIT/i.test(industry||"") || has("\\bREIT\\b")) return "REIT";
+  if(/Tobacco/i.test(industry||"")) return "Tobacco";
+  if(/Insurance/i.test(industry||"")) return "Insurance";
+  if(/Banks?/i.test(industry||"")) return "Banks";
+  if(/Asset Management|Capital Markets/i.test(industry||"")){
+    if(has("business development company|\\bBDC\\b")) return "BDC";
+    return "Asset Management";
+  }
+  if(/Semiconductors?/i.test(industry||"")) return "Semiconductors";
+  if(/Software/i.test(industry||"")) return "Software";
+  if(/Interactive Media|Entertainment|Media/i.test(industry||"")) return "Media & Entertainment";
+  if(/Telecom|Wireless|Communication Equipment/i.test(industry||"")) return "Telecommunications";
+  if(/Pharmaceuticals|Biotechnology|Life Sciences/i.test(industry||"")) return "Pharma/Biotech";
+  if(/Health Care Equipment|Providers/i.test(industry||"")) return "Health Care Services";
+  if(/Oil|Gas|Consumable Fuels|Energy Equipment/i.test(industry||"")) return "Energy";
+  if(/Utilities/i.test(industry||"")) return "Utilities";
+  if(/Real Estate/i.test(industry||"")) return "Real Estate";
+  if(/Consumer Staples|Beverages|Food/i.test(industry||"")) return "Consumer Staples";
+  if(/Automobiles|Auto Components/i.test(industry||"")) return "Automobiles";
+  if(/Aerospace|Defense/i.test(industry||"")) return "Aerospace & Defense";
+  if(/Metals|Mining|Materials|Chemicals/i.test(industry||"")) return "Materials";
+  if(/Industrial|Machinery|Transportation|Logistics/i.test(industry||"")) return "Industrials";
+
+  // Heuristik: falls im Text BDC erkannt
+  if(has("business development company|\\bBDC\\b")) return "BDC";
+  return industry || "—";
+}
+
+/* ------------------------ Moat-Qualifizierung ------------------------
+   Mapping Morningstar: Wide→Stark, Narrow→Mittel, None→Schwach. Plus
+   heuristische Erkennung von Differenzierungsfaktoren im Profiltext:
+   Netzwerkeffekt, Wechselkosten, immaterielle Werte/Regulierung, Kostenführerschaft, Efficient Scale. [3](https://origin2.cdn.componentsource.com/sites/default/files/resources/dundas/538216/Documentation/Bollinger.html) */
+function analyzeMoat(moatRating, description){
+  const factors = [];
+  const add = (label)=>{ if(!factors.includes(label)) factors.push(label); };
+  const d = (description||"").toLowerCase();
+
+  if(/network|platform|marketplace|two-?sided/.test(d)) add("Netzwerkeffekt");
+  if(/switching cost|vendor lock-?in|installed base|ecosystem|mission[- ]critical|integration|ERP/.test(d)) add("Wechselkosten");
+  if(/patent|intellectual property|ip |brand|licen[sc]e|regulatory|fda/.test(d)) add("Immaterielle Werte/Regulierung");
+  if(/low-?cost|scale|vertical integration|distribution|cost advantage|efficien/.test(d)) add("Kostenführerschaft/Skalenvorteile");
+  if(/monopoly|duopoly|limited competition|natural monopoly|concession|franchise|regional utility/.test(d)) add("Efficient Scale");
+
+  let strength = "mittel", basis = "";
+  if(moatRating==="Wide Moat"){ strength="stark"; basis="Morningstar: Wide Moat"; }
+  else if(moatRating==="Narrow Moat"){ strength="mittel"; basis="Morningstar: Narrow Moat"; }
+  else if(moatRating==="No Moat"){ strength="schwach"; basis="Morningstar: No Moat"; }
+  else {
+    if(factors.length>=2){ strength="stark"; basis="Mehrere Differenzierungsfaktoren im Profil"; }
+    else if(factors.length===1){ strength="mittel"; basis="Ein dominanter Differenzierungsfaktor"; }
+    else { strength="schwach"; basis="Wenig klar erkennbare Differenzierung"; }
+  }
+  const explain = factors.length ? `Hauptdifferenzierer: ${factors.join(", ")}` : "Keine klaren Differenzierer im Profiltext ersichtlich";
+  return {strength, basis, explain};
+}
+
+/* ------------------------ Technische Indikatoren ------------------------ */
+function sma(values, period){
+  if(values.length < period) return null;
+  let sum = 0; for(let i=values.length-period;i<values.length;i++) sum += values[i];
+  return sum/period;
+}
+function stdev(values){
+  const mean = values.reduce((a,b)=>a+b,0)/values.length;
+  const v = values.reduce((a,b)=>a+(b-mean)*(b-mean),0)/values.length;
+  return Math.sqrt(v);
+}
+function rsi14(closes){
+  const period = 14;
+  if(closes.length <= period) return null;
+  let gains=0, losses=0;
+  for(let i=1;i<=period;i++){
+    const ch = closes[i]-closes[i-1];
+    if(ch>=0) gains += ch; else losses += -ch;
+  }
+  let avgGain = gains/period;
+  let avgLoss = losses/period;
+  for(let i=period+1;i<closes.length;i++){
+    const ch = closes[i]-closes[i-1];
+    const gain = Math.max(ch,0), loss = Math.max(-ch,0);
+    avgGain = (avgGain*(period-1)+gain)/period;
+    avgLoss = (avgLoss*(period-1)+loss)/period;
+  }
+  if(avgLoss===0) return 100;
+  const rs = avgGain/avgLoss;
+  return 100 - (100/(1+rs));
+}
+function bollingerPercentB(closes){
+  const period = 20, mult = 2;
+  if(closes.length < period) return null;
+  const recent = closes.slice(-period);
+  const mid = recent.reduce((a,b)=>a+b,0)/period;
+  const sd = stdev(recent);
+  const upper = mid + mult*sd;
+  const lower = mid - mult*sd;
+  const price = closes[closes.length-1];
+  const percentB = (price - lower)/(upper - lower);
+  return {percentB, upper, lower, mid};
+}
+function crossSignal(closes){
+  if(closes.length < 200) return {sma50:null,sma200:null,signal:"—"};
+  const sma50_now = sma(closes,50);
+  const sma200_now = sma(closes,200);
+  const prev50 = sma(closes.slice(0,-1),50);
+  const prev200 = sma(closes.slice(0,-1),200);
+  let signal = "neutral";
+  if(prev50 && prev200){
+    if(prev50<=prev200 && sma50_now> sma200_now) signal = "Golden Cross";
+    else if(prev50>=prev200 && sma50_now< sma200_now) signal = "Death Cross";
+    else signal = (sma50_now> sma200_now) ? "Bullish" : "Bearish";
+  }
+  return {sma50:sma50_now, sma200:sma200_now, signal};
+}
+function distanceFrom52wLow(closes){
+  const N = Math.min(closes.length, 260);
+  const last = closes[closes.length-1];
+  const slice = closes.slice(-N);
+  const low = Math.min(...slice);
+  const dist = (last - low)/low * 100;
+  return {low, last, dist};
+}
+
+/* ------------------------ Rendering ------------------------ */
+function renderRSIGauge(value){
+  const el = qs("#rsiGauge");
+  el.innerHTML = "";
+  const v = Math.max(0, Math.min(100, value||0));
+  const arcs = [
+    {start:0,end:30,color:"#22c55e"},
+    {start:30,end:70,color:"#fbbf24"},
+    {start:70,end:100,color:"#ef4444"}
+  ];
+  const svgNS="http://www.w3.org/2000/svg";
+  const svg=document.createElementNS(svgNS,"svg"); svg.setAttribute("viewBox","0 0 100 50");
+
+  arcs.forEach(a=>{
+    const path=document.createElementNS(svgNS,"path");
+    const s = a.start/100*Math.PI, e=a.end/100*Math.PI;
+    const x1 = 50 - Math.cos(s)*48, y1 = 50 - Math.sin(s)*48;
+    const x2 = 50 - Math.cos(e)*48, y2 = 50 - Math.sin(e)*48;
+    const d = `M ${x1} ${y1} A 48 48 0 0 1 ${x2} ${y2}`;
+    path.setAttribute("d", d);
+    path.setAttribute("stroke", a.color);
+    path.setAttribute("stroke-width","8");
+    path.setAttribute("fill","none");
+    svg.appendChild(path);
+  });
+
+  // korrekte Halbrund-Skalierung: 0 → -90°, 100 → +90°
+  const angle = (v/100)*180 - 90;
+  const needle=document.createElementNS(svgNS,"line");
+  needle.setAttribute("x1","50"); needle.setAttribute("y1","50");
+  needle.setAttribute("x2","50"); needle.setAttribute("y2","4");
+  needle.setAttribute("stroke","#e7eef5"); needle.setAttribute("stroke-width","2");
+  needle.setAttribute("transform", `rotate(${angle} 50 50)`);
+  svg.appendChild(needle);
+  el.appendChild(svg);
+
+  const badge = qs("#rsiBadge");
+  badge.textContent = Math.round(v);
+  badge.className = "pill " + colorPill(v,30,70);
+}
+function renderPercentB(pb){
+  const pctVal = Math.max(0, Math.min(1, pb||0));
+  const w = Math.round(pctVal*100);
+  qs("#bbBar").style.width = w+"%";
+  qs("#bbBar").style.background =
+    pctVal<0.2 ? "linear-gradient(90deg,#059669,#22c55e)" :
+    pctVal>0.8 ? "linear-gradient(90deg,#ef4444,#f97316)" :
+                 "linear-gradient(90deg,#2563eb,#22c55e)";
+  qs("#bbText").textContent = `%B: ${w}% (0=unteres Band, 100=oberes Band)`;
+}
+function renderSMACross(info){
+  const el = qs("#smaText");
+  el.innerHTML = `
+    <div>SMA50: <strong>${fmt(info.sma50)}</strong></div>
+    <div>SMA200: <strong>${fmt(info.sma200)}</strong></div>
+    <div>Status: ${
+      info.signal==="Golden Cross" ? '<span class="pill ok">Golden Cross</span>' :
+      info.signal==="Death Cross" ? '<span class="pill danger">Death Cross</span>' :
+      info.signal==="Bullish" ? '<span class="pill ok">Bullish</span>' :
+      '<span class="pill warn">Bearish/Neutral</span>'
+    }</div>`;
+}
+function renderDistance52w(d){
+  const color = (d.dist<10)?"ok":(d.dist<=20)?"warn":"danger";
+  qs("#distRow").innerHTML = `<span class="pill ${color}">${fmt(d.dist,1)}% über 52W‑Low (${fmt(d.low)})</span>`;
+  qs("#distText").textContent = `Aktuell: ${fmt(d.last)}`;
+}
+function renderPriceBlock(price, currency){
+  qs("#priceBlock").innerHTML = `<div style="font-size:20px;font-weight:700">${fmt(price)} ${currency||""}</div>`;
+}
+function computeScore({rsi, cross, percentB, dist52w}){
+  let score = 5, reasons = [];
+  if(rsi!==null){
+    if(rsi<30){ score+=2; reasons.push("RSI < 30 (überverkauft) +2"); }
+    else if(rsi>70){ score-=2; reasons.push("RSI > 70 (überkauft) −2"); }
+    else { score+=1; reasons.push("RSI 30–70 (neutral) +1"); }
+  }
+  if(cross){
+    if(cross.signal==="Golden Cross"){ score+=2; reasons.push("Golden Cross +2"); }
+    else if(cross.signal==="Death Cross"){ score-=2; reasons.push("Death Cross −2"); }
+    else if(cross.sma50>cross.sma200){ score+=1; reasons.push("SMA50 > SMA200 +1"); }
+  }
+  if(percentB!==null){
+    if(percentB<0.2){ score+=1; reasons.push("%B < 0.2 +1"); }
+    else if(percentB>0.8){ score-=1; reasons.push("%B > 0.8 −1"); }
+  }
+  if(dist52w!==null){
+    if(dist52w<10){ score+=2; reasons.push("≤10% über 52W‑Low +2"); }
+    else if(dist52w<=20){ score+=1; reasons.push("10–20% +1"); }
+  }
+  score = Math.max(1, Math.min(10, score));
+  const label = score>=7?"Kaufen":(score>=4?"Beobachten":"Nicht kaufen");
+  const color = score>=7?"ok":(score>=4?"warn":"danger");
+  setAmpel(score);
+  qs("#scoreText").innerHTML = `<span class="pill ${color}" style="font-weight:700">Score ${score}/10 · ${label}</span>`;
+  qs("#scoreExplain").innerHTML = "Begründung: " + reasons.join("; ") + ". (Heuristik – keine Anlageberatung)";
+}
+
+/* ------------------------ Meta Rendering ------------------------ */
+function setCompanyMeta({symbol, fullName, sectorLabel, moat}){
+  qs("#metaSymbol").textContent = symbol || "—";
+  qs("#metaName").textContent = fullName || "—";
+  qs("#metaSector").textContent = `Sektor (qualitativ): ${sectorLabel || "—"}`;
+  qs("#metaMoat").textContent = `Burggraben: ${moat.strength||"—"}`;
+  qs("#metaMoatExplain").textContent = moat.basis
+    ? `${moat.explain} · (${moat.basis})`
+    : moat.explain;
+}
+
+/* ------------------------ Main Flow ------------------------ */
+async function analyze(symbolInput){
+  try{
+    setStatus(""); showSkeletonHeader(true);
+    const symbol = symbolInput.trim();
+
+    // 1) Profile/Kurs
+    const qsData = await getQuoteSummary(symbol);
+    const res = qsData.quoteSummary?.result?.[0] || {};
+    const price = res.price || {};
+    const ap = res.assetProfile || {};
+    const sp = res.summaryProfile || {};
+    const currency = price?.currency || price?.currencySymbol || "";
+
+    // 2) Vollständiger Name (Fallback via Search)
+    let fullName = price?.longName || price?.shortName || "";
+    if(!fullName || fullName.toUpperCase() === symbol.toUpperCase()){
+      try{
+        const s = await searchYahoo(symbol); // holt longname/shortname
+        const hit = (s?.quotes||[]).find(q => (q.symbol||"").toUpperCase()===symbol.toUpperCase());
+        if(hit?.longname) fullName = hit.longname;
+        else if(hit?.shortname) fullName = hit.shortname;
+      }catch(e){}
     }
+    if(!fullName) fullName = symbol; // letzter Fallback
 
-    async function loadData() {
-      refreshBtn.disabled = true;
-      statusText.textContent = 'Kurse werden geladen …';
-      renderSkeletons(Math.min(STOCKS.length, 12));
+    // 3) Chartdaten (für Signale)
+    const chart = await getChart(symbol);
+    const result = chart.chart?.result?.[0];
+    if(!result) throw new Error("Keine Kursdaten gefunden.");
+    const closes = (result.indicators?.quote?.[0]?.close || []).filter(v=>v!=null);
+    if(closes.length<50) throw new Error("Zu wenige Datenpunkte.");
 
-      try {
-        const results = await Promise.allSettled(
-          STOCKS.map(stock => fetchYahooChart(stock.yahoo))
-        );
+    // 4) Moat (Morningstar Heuristik + Profil‑Analyse)
+    const moatRating = await (async ()=>{
+      try{
+        const duck = `https://duckduckgo.com/html/?q=${encodeURIComponent(fullName + " Morningstar moat rating")}`;
+        const raw = await (await fetch(ALO + encodeURIComponent(duck))).text();
+        const html = JSON.parse(raw).contents; const txt = html.replace(/<[^>]+>/g," ");
+        const m = /(Wide Moat|Narrow Moat|No Moat)/i.exec(txt);
+        return m ? m[0].replace(/^\w/, c=>c.toUpperCase()) : "unbekannt";
+      }catch(e){ return "unbekannt"; }
+    })();
 
-        grid.innerHTML = '';
-        let okCount = 0;
+    // 5) Qualitativer Sektor (Sub‑Industry‑like)
+    const industry = ap?.industry || sp?.industry || null;
+    const description = ap?.longBusinessSummary || "";
+    const sectorLabel = deriveQualSector(industry, description, fullName);
 
-        results.forEach((result, index) => {
-          const stock = STOCKS[index];
-          if (result.status === 'fulfilled') {
-            okCount++;
-            grid.appendChild(renderCard(stock, result.value));
-          } else {
-            grid.appendChild(renderCard(stock, null, result.reason));
-          }
-        });
+    // 6) Moat‑Qualifizierung (Stark/Mittel/Schwach + Begründung)
+    const moat = analyzeMoat(moatRating, description);
 
-        statusText.textContent = `${okCount}/${STOCKS.length} Kurse geladen`;
-        lastUpdated.textContent = new Intl.DateTimeFormat('de-DE', {
-          dateStyle: 'short',
-          timeStyle: 'medium'
-        }).format(new Date());
-      } catch (err) {
-        grid.innerHTML = `<div class="empty">Beim Laden ist ein Fehler aufgetreten: ${escapeHtml(err.message || 'Unbekannter Fehler')}</div>`;
-        statusText.textContent = 'Fehler beim Laden';
-      } finally {
-        refreshBtn.disabled = false;
-      }
-    }
+    // 7) Technische Signale
+    const rsi = rsi14(closes);
+    const bb = bollingerPercentB(closes);
+    const cross = crossSignal(closes);
+    const dist = distanceFrom52wLow(closes);
+    const last = closes[closes.length-1];
 
-    refreshBtn.addEventListener('click', loadData);
-    loadData();
-  </script>
+    // 8) Render
+    setCompanyMeta({symbol, fullName, sectorLabel, moat});
+    showSkeletonHeader(false);
+    renderRSIGauge(rsi);
+    renderPercentB(bb?bb.percentB:null);
+    renderSMACross(cross);
+    renderDistance52w(dist);
+    renderPriceBlock(last, currency);
+
+    // 9) Score
+    computeScore({rsi, cross, percentB: bb?bb.percentB:null, dist52w: dist?dist.dist:null});
+
+  }catch(err){
+    console.error(err);
+    setStatus(`<div class="card error">Fehler: ${err.message}</div>`);
+  }
+}
+
+/* Init */
+(function init(){
+  const q = new URLSearchParams(location.search).get("symbol");
+  const input = qs("#query");
+  if(q){ input.value = q; analyze(q); }
+  document.getElementById("btnSearch").addEventListener("click", ()=> {
+    if(!input.value.trim()) { input.focus(); return; }
+    analyze(input.value);
+  });
+  document.getElementById("btnRefresh").addEventListener("click", ()=> {
+    if(!input.value.trim()) { input.focus(); return; }
+    analyze(input.value + "");
+  });
+})();
+</script>
 </body>
 </html>

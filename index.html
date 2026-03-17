@@ -41,7 +41,7 @@
     .tooltip .tip{
       position:absolute;left:50%;transform:translateX(-50%);bottom:120%;
       background:#101621;border:1px solid var(--border);padding:8px 10px;border-radius:8px;
-      color:#c6d2df;font-size:12px;width:max(220px,24ch);box-shadow:var(--shadow);display:none;z-index:5
+      color:#c6d2df;font-size:12px;width:max(220px,26ch);box-shadow:var(--shadow);display:none;z-index:5
     }
     .tooltip:hover .tip{display:block}
     .legend{display:flex;justify-content:space-between;font-size:12px;margin-top:6px;color:var(--muted)}
@@ -61,7 +61,7 @@
       <button id="btnSearch" class="primary">Analysieren</button>
       <button id="btnRefresh">Refresh</button>
     </div>
-    <div class="muted" style="margin-top:6px">Tipp: Du kannst auch <code>?symbol=AAPL</code> an die URL hängen.</div>
+    <!-- (kein URL-Tipp) -->
   </div>
 </header>
 
@@ -70,56 +70,61 @@
   <div class="grid">
     <section class="card areaA">
       <div id="companyHeader" class="kpi">
-        <!-- Loader -->
         <div class="loader-block" id="skeleton-header">
           <div class="skeleton" style="height:26px;width:60%"></div>
           <div class="skeleton" style="width:40%"></div>
           <div class="skeleton" style="width:80%"></div>
         </div>
 
-        <!-- Meta -->
         <div id="companyMeta" style="display:none">
           <div class="row">
             <div class="badge" id="metaSymbol">—</div>
-            <!-- ▼ Vollständiger Name -->
             <div class="badge" id="metaName">—</div>
 
-            <!-- ▼ Qualitativer Sektor (Sub‑Industry‑Like) -->
             <div class="tooltip">
-              <div class="badge" id="metaSector">Sektor (qualitativ): —</div>
+              <div class="badge" id="metaSector">Sektor: —</div>
               <div class="tip">
-                Abgeleitet aus Yahoo‑„Industry“, normalisiert auf GICS‑Logik (z. B. Insurance, Tobacco, REIT, BDC). GICS wird von MSCI &amp; S&amp;P gepflegt. [1](https://en.wikipedia.org/wiki/Bollinger_Bands)[2](https://trendspider.com/learning-center/bollinger-band-width-and-b-an-overview/)
+                Zuordnung nach GICS‑Logik (z. B. „Basisverbrauchsgüter“, „Industrie“, „Gesundheit“). GICS wird von MSCI &amp; S&amp;P Global gepflegt.
               </div>
             </div>
 
-            <!-- ▼ Burggraben‑Badge -->
+            <div class="tooltip">
+              <div class="badge" id="metaIndustry">Branche: —</div>
+              <div class="tip">
+                Deutsches Oberklassen‑Synonym des GICS‑Sektors (z. B. „Nichtzyklischer Konsum“ für Consumer Staples).
+              </div>
+            </div>
+
+            <div class="tooltip">
+              <div class="badge" id="metaSubIndustry">Unterbranche: —</div>
+              <div class="tip">
+                Unterbranche aus den Profilangaben (z. B. „Tabak“, „Versicherungen“, „Halbleiter“).
+              </div>
+            </div>
+
             <div class="tooltip">
               <div class="badge" id="metaMoat">Burggraben: —</div>
               <div class="tip">
-                Morningstar Moat (Wide/Narrow/None) → Stark/Mittel/Schwach; plus kurze qualitative Begründung aus Firmenprofil. [3](https://origin2.cdn.componentsource.com/sites/default/files/resources/dundas/538216/Documentation/Bollinger.html)
+                Morningstar Economic Moat (Wide/Narrow/None) → Stark/Mittel/Schwach; Kurzbegründung aus Profiltext.
               </div>
             </div>
           </div>
-          <!-- Kurzbegründung Burggraben -->
           <div class="muted" id="metaMoatExplain"></div>
-
-          <!-- Hinweiszeile -->
           <div class="muted" id="metaNote" style="margin-top:6px">
-            Quellen: GICS (MSCI &amp; S&amp;P Global), Morningstar‑Moat, Yahoo Finance Profil/Industry (qualitativ). [1](https://en.wikipedia.org/wiki/Bollinger_Bands)[2](https://trendspider.com/learning-center/bollinger-band-width-and-b-an-overview/)[5](https://kiko.io/notes/2023/avoid-cors-problems-with-allorgins/)
+            Quellen: GICS (MSCI &amp; S&amp;P Global), Morningstar‑Moat, Yahoo Finance &amp; Google Finance (qualitativ).
           </div>
         </div>
       </div>
 
       <div class="sep"></div>
 
-      <!-- Signale -->
       <div class="grid" style="grid-template-columns:repeat(12,1fr);gap:16px">
         <!-- RSI -->
         <div class="card" style="grid-column:span 6">
           <div class="row tooltip">
             <strong>RSI(14)</strong>
             <span class="pill ok" id="rsiBadge">—</span>
-            <div class="tip">RSI (14): 0–100; &lt;30 überverkauft (grün), 30–70 neutral (gelb), &gt;70 überkauft (rot). [6](https://www.ssga.com/us/en/institutional/capabilities/equities/sector-investing/gics-sector-and-industry-map)</div>
+            <div class="tip">RSI (14): 0–100; &lt;30 überverkauft (grün), 30–70 neutral (gelb), &gt;70 überkauft (rot).</div>
           </div>
           <div class="gauge" id="rsiGauge"></div>
           <div class="legend"><span>0</span><span>50</span><span>100</span></div>
@@ -129,18 +134,18 @@
         <div class="card" style="grid-column:span 6">
           <div class="row tooltip">
             <strong>Bollinger %B</strong>
-            <div class="tip">%B = (Preis − LowerBand) / (UpperBand − LowerBand). 0 = unteres Band, 1 = oberes Band. [7](https://invest.howlifeusa.com/bollinger-bands/)</div>
+            <div class="tip">%B = (Preis − Unteres Band) / (Oberes Band − Unteres Band). 0 = unteres Band, 1 = oberes Band.</div>
           </div>
           <div class="progress"><span id="bbBar" style="width:0%"></span></div>
           <div class="legend"><span>0%</span><span>50%</span><span>100%</span></div>
           <div class="muted" id="bbText"></div>
         </div>
 
-        <!-- SMA Cross -->
+        <!-- SMA -->
         <div class="card" style="grid-column:span 6">
           <div class="row tooltip">
             <strong>SMA50 / SMA200</strong>
-            <div class="tip">Golden Cross = SMA50 über SMA200 (bullish); Death Cross = SMA50 unter SMA200 (bearish). [8](https://www.silverlightresearch.com/uploads/1/0/2/7/102798756/msci_global_industry_classification_standard_1.pdf)</div>
+            <div class="tip">Golden Cross = SMA50 über SMA200; Death Cross = SMA50 unter SMA200.</div>
           </div>
           <div id="smaText" class="kpi">
             <div class="skeleton" style="width:90%"></div>
@@ -148,11 +153,11 @@
           </div>
         </div>
 
-        <!-- Abstand 52W Low -->
+        <!-- 52W -->
         <div class="card" style="grid-column:span 6">
           <div class="row tooltip">
             <strong>Abstand zum 52‑Wochentief</strong>
-            <div class="tip">(Preis − 52W‑Low)/52W‑Low; &lt;10 % grün, 10–20 % gelb, &gt;20 % rot. [9](https://www.investing.com/academy/analysis/relative-strength-index-definition/)</div>
+            <div class="tip">(Preis − 52W‑Low)/52W‑Low; &lt;10 % grün, 10–20 % gelb, &gt;20 % rot.</div>
           </div>
           <div class="row" id="distRow"></div>
           <div class="muted" id="distText"></div>
@@ -174,7 +179,7 @@
 
       <div class="section-title">Letzter Kurs</div>
       <div id="priceBlock">
-        <div class="skeleton" style="width:60%"></div>
+        <div class="skeleton" style="width:80%"></div>
       </div>
 
       <footer>
@@ -185,39 +190,40 @@
 </main>
 
 <script>
-const qs = (sel, el=document)=>el.querySelector(sel);
-const ALO = "https://api.allorigins.win/get?url="; // AllOrigins proxy
+/* ========================== Konfiguration =========================== */
+/** Deutsch‑Anzeige rein (nur DE). Für DE + (EN) Klammern: true setzen. */
+const SHOW_EN_IN_PARENS = false;
 
-/* ------------------------ Hilfsfunktionen ------------------------ */
+/* ========================== Utilities =============================== */
+const qs = (sel, el=document)=>el.querySelector(sel);
+const ALO = "https://api.allorigins.win/get?url="; // CORS‑Proxy
+
 function setStatus(html){ qs("#status").innerHTML = html || ""; }
 function showSkeletonHeader(show){
   qs("#skeleton-header").style.display = show?"grid":"none";
   qs("#companyMeta").style.display = show?"none":"block";
 }
-function colorPill(value, low, high){
-  if(value < low) return "ok";
-  if(value > high) return "danger";
-  return "warn";
-}
-function setAmpel(score){
-  const g = qs("#lightG"), y = qs("#lightY"), r = qs("#lightR");
-  g.style.opacity = y.style.opacity = r.style.opacity = .25;
-  if(score>=7){ g.style.opacity=1; }
-  else if(score>=4){ y.style.opacity=1; }
-  else { r.style.opacity=1; }
-}
-function fmt(v, dig=2){ return (v===null||v===undefined)?"—":Number(v).toFixed(dig); }
+function colorPill(value, low, high){ if(value < low) return "ok"; if(value > high) return "danger"; return "warn"; }
+function setAmpel(score){ const g=qs("#lightG"),y=qs("#lightY"),r=qs("#lightR"); g.style.opacity=y.style.opacity=r.style.opacity=.25; if(score>=7)g.style.opacity=1; else if(score>=4)y.style.opacity=1; else r.style.opacity=1; }
+function fmt(v, dig=2){ return (v===null||v===undefined||Number.isNaN(v))?"—":Number(v).toFixed(dig); }
 
-/* ------------------------ Fetch via Proxy ------------------------ */
+/* ========================== Proxy Fetch ============================= */
 async function fetchJSONViaProxy(url){
   const res = await fetch(ALO + encodeURIComponent(url));
   if(!res.ok) throw new Error("Netzwerkfehler Proxy");
   const data = await res.json();
   try { return JSON.parse(data.contents); }
-  catch(e){ throw new Error("Ungültige Zielantwort: " + (data && data.contents ? data.contents.slice(0,80)+"..." : "")); }
+  catch(e){ throw new Error("Ungültige Zielantwort: " + (data && data.contents ? data.contents.slice(0,120)+"..." : "")); }
+}
+async function fetchHTMLViaProxy(url){
+  const res = await fetch(ALO + encodeURIComponent(url));
+  if(!res.ok) throw new Error("Netzwerkfehler Proxy");
+  const data = await res.json();
+  return data.contents || "";
 }
 
-/* ------------------------ Yahoo Endpoints (inoffiziell) ------------------------ */
+/* ========================== Datenquellen ============================ */
+// Yahoo (inoffiziell)
 async function getChart(symbol){
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=2y&interval=1d`;
   return fetchJSONViaProxy(url);
@@ -226,20 +232,96 @@ async function getQuoteSummary(symbol){
   const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=price,assetProfile,summaryProfile`;
   return fetchJSONViaProxy(url);
 }
-/* ▼ NEU: Suche, um den vollen Firmennamen zu sichern */
 async function searchYahoo(q){
   const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}`;
   return fetchJSONViaProxy(url);
 }
 
-/* ------------------------ GICS-orientierte Sektor-Ableitung (qualitativ) ------------------------
-   Wir nehmen Yahoo 'industry' und mappen auf kurze, sub‑industry‑ähnliche Labels
-   (Insurance, Tobacco, REIT, BDC, Asset Management, Banks, Semiconductors, etc.).
-   Referenz: GICS Struktur/Definition (MSCI / S&P). [1](https://en.wikipedia.org/wiki/Bollinger_Bands)[2](https://trendspider.com/learning-center/bollinger-band-width-and-b-an-overview/) */
+// Google Finance (HTML‑Quote)
+const EXCHANGE_MAP = {
+  "NasdaqGS":"NASDAQ","NasdaqGM":"NASDAQ","Nasdaq":"NASDAQ","NMS":"NASDAQ",
+  "NYSE":"NYSE","XETRA":"ETR","GER":"ETR","Frankfurt":"FRA",
+  "SIX Swiss Exchange":"SWX","SWX":"SWX","LSE":"LON","London Stock Exchange":"LON",
+  "Toronto Stock Exchange":"TSE","TSX":"TSE"
+};
+async function getGoogleQuoteInfo(symbol, exchangeHint){
+  const ex = EXCHANGE_MAP[exchangeHint] || "NASDAQ";
+  const url = `https://www.google.com/finance/quote/${encodeURIComponent(symbol+":"+ex)}?hl=en`;
+  const html = await fetchHTMLViaProxy(url);
+  const priceM = html.match(/class="YMlKec fxKbKc">([^<]+)/); // Preis
+  const nameM  = html.match(/class="zzDege">([^<]+)/);        // voller Name
+  // About‑Panel: Keys/Values
+  const keys = [...html.matchAll(/class="mfs7Fc">([^<]+)</g)].map(m=>m[1].trim());
+  const vals = [...html.matchAll(/class="P6K39c"[^>]*>(.*?)<\/div>/gs)].map(m=>m[1].replace(/<[^>]+>/g," ").trim());
+  const about = {}; keys.forEach((k,i)=>about[k]=vals[i]);
+  const sector = about["Sector"] || "";
+  const industry = about["Industry"] || "";
+  // Preis normalisieren
+  let price = null;
+  if(priceM){ const raw=priceM[1].replace(/[^\d.,-]/g,"").replace(/\s/g,""); price = parseFloat(raw.replace(/\./g,"").replace(/,/g,".")); }
+  return { price, name: nameM ? nameM[1].trim() : "", sector, industry };
+}
+
+/* ========================== GICS‑Übersetzungen ====================== */
+function translateSectorDE(sectorEn){
+  if(!sectorEn) return null;
+  const m = {
+    "Consumer Staples":"Basisverbrauchsgüter",
+    "Consumer Defensive":"Basisverbrauchsgüter",
+    "Consumer Non-Cyclical":"Basisverbrauchsgüter",
+    "Consumer Discretionary":"Zyklischer Konsum",
+    "Communication Services":"Kommunikationsdienste",
+    "Information Technology":"Informationstechnologie",
+    "Health Care":"Gesundheit",
+    "Financials":"Finanzen",
+    "Real Estate":"Immobilien",
+    "Industrials":"Industrie",
+    "Materials":"Grundstoffe",
+    "Energy":"Energie",
+    "Utilities":"Versorger"
+  };
+  return m[sectorEn] || sectorEn;
+}
+function sectorAliasToBrancheDE(sectorEn){
+  const m = {
+    "Consumer Staples":"Nichtzyklischer Konsum",
+    "Consumer Defensive":"Nichtzyklischer Konsum",
+    "Consumer Non-Cyclical":"Nichtzyklischer Konsum",
+    "Consumer Discretionary":"Zyklischer Konsum",
+    "Communication Services":"Kommunikationsdienste",
+    "Information Technology":"Informationstechnologie",
+    "Health Care":"Gesundheit",
+    "Financials":"Finanzen",
+    "Real Estate":"Immobilien",
+    "Industrials":"Industrie",
+    "Materials":"Grundstoffe",
+    "Energy":"Energie",
+    "Utilities":"Versorger"
+  };
+  return m[sectorEn] || sectorEn;
+}
+function translateSubIndustryDE(industryEn){
+  if(!industryEn) return null;
+  const m = {
+    "Tobacco":"Tabak",
+    "Beverages":"Getränke",
+    "Household Products":"Haushaltsprodukte",
+    "Personal Products":"Körperpflege",
+    "Food Products":"Nahrungsmittel",
+    "Banks":"Banken",
+    "Asset Management":"Vermögensverwalter",
+    "Insurance":"Versicherungen",
+    "Semiconductors":"Halbleiter",
+    "Software":"Software",
+    "Oil & Gas":"Öl & Gas"
+  };
+  return m[industryEn] || industryEn;
+}
+
+/* ========================== Qualitatives Sektor‑Label =============== */
 function deriveQualSector(industry, description, name){
   const text = (industry||"") + " " + (description||"") + " " + (name||"");
   const has = (rx)=> new RegExp(rx,"i").test(text);
-
   if(/REIT/i.test(industry||"") || has("\\bREIT\\b")) return "REIT";
   if(/Tobacco/i.test(industry||"")) return "Tobacco";
   if(/Insurance/i.test(industry||"")) return "Insurance";
@@ -262,276 +344,177 @@ function deriveQualSector(industry, description, name){
   if(/Aerospace|Defense/i.test(industry||"")) return "Aerospace & Defense";
   if(/Metals|Mining|Materials|Chemicals/i.test(industry||"")) return "Materials";
   if(/Industrial|Machinery|Transportation|Logistics/i.test(industry||"")) return "Industrials";
-
-  // Heuristik: falls im Text BDC erkannt
   if(has("business development company|\\bBDC\\b")) return "BDC";
   return industry || "—";
 }
 
-/* ------------------------ Moat-Qualifizierung ------------------------
-   Mapping Morningstar: Wide→Stark, Narrow→Mittel, None→Schwach. Plus
-   heuristische Erkennung von Differenzierungsfaktoren im Profiltext:
-   Netzwerkeffekt, Wechselkosten, immaterielle Werte/Regulierung, Kostenführerschaft, Efficient Scale. [3](https://origin2.cdn.componentsource.com/sites/default/files/resources/dundas/538216/Documentation/Bollinger.html) */
+/* ========================== Burggraben (Moat) ======================= */
 function analyzeMoat(moatRating, description){
-  const factors = [];
-  const add = (label)=>{ if(!factors.includes(label)) factors.push(label); };
+  const factors = []; const add = l=>{ if(!factors.includes(l)) factors.push(l); };
   const d = (description||"").toLowerCase();
-
   if(/network|platform|marketplace|two-?sided/.test(d)) add("Netzwerkeffekt");
-  if(/switching cost|vendor lock-?in|installed base|ecosystem|mission[- ]critical|integration|ERP/.test(d)) add("Wechselkosten");
+  if(/switching cost|vendor lock-?in|installed base|ecosystem|mission[- ]critical|integration|erp/.test(d)) add("Wechselkosten");
   if(/patent|intellectual property|ip |brand|licen[sc]e|regulatory|fda/.test(d)) add("Immaterielle Werte/Regulierung");
   if(/low-?cost|scale|vertical integration|distribution|cost advantage|efficien/.test(d)) add("Kostenführerschaft/Skalenvorteile");
   if(/monopoly|duopoly|limited competition|natural monopoly|concession|franchise|regional utility/.test(d)) add("Efficient Scale");
-
-  let strength = "mittel", basis = "";
+  let strength="mittel", basis="";
   if(moatRating==="Wide Moat"){ strength="stark"; basis="Morningstar: Wide Moat"; }
   else if(moatRating==="Narrow Moat"){ strength="mittel"; basis="Morningstar: Narrow Moat"; }
   else if(moatRating==="No Moat"){ strength="schwach"; basis="Morningstar: No Moat"; }
-  else {
-    if(factors.length>=2){ strength="stark"; basis="Mehrere Differenzierungsfaktoren im Profil"; }
-    else if(factors.length===1){ strength="mittel"; basis="Ein dominanter Differenzierungsfaktor"; }
-    else { strength="schwach"; basis="Wenig klar erkennbare Differenzierung"; }
-  }
+  else { if(factors.length>=2){ strength="stark"; basis="Mehrere Differenzierungsfaktoren"; }
+         else if(factors.length===1){ strength="mittel"; basis="Ein dominanter Faktor"; }
+         else { strength="schwach"; basis="Wenig klare Differenzierung"; } }
   const explain = factors.length ? `Hauptdifferenzierer: ${factors.join(", ")}` : "Keine klaren Differenzierer im Profiltext ersichtlich";
   return {strength, basis, explain};
 }
 
-/* ------------------------ Technische Indikatoren ------------------------ */
-function sma(values, period){
-  if(values.length < period) return null;
-  let sum = 0; for(let i=values.length-period;i<values.length;i++) sum += values[i];
-  return sum/period;
-}
-function stdev(values){
-  const mean = values.reduce((a,b)=>a+b,0)/values.length;
-  const v = values.reduce((a,b)=>a+(b-mean)*(b-mean),0)/values.length;
-  return Math.sqrt(v);
-}
-function rsi14(closes){
-  const period = 14;
-  if(closes.length <= period) return null;
-  let gains=0, losses=0;
-  for(let i=1;i<=period;i++){
-    const ch = closes[i]-closes[i-1];
-    if(ch>=0) gains += ch; else losses += -ch;
-  }
-  let avgGain = gains/period;
-  let avgLoss = losses/period;
-  for(let i=period+1;i<closes.length;i++){
-    const ch = closes[i]-closes[i-1];
-    const gain = Math.max(ch,0), loss = Math.max(-ch,0);
-    avgGain = (avgGain*(period-1)+gain)/period;
-    avgLoss = (avgLoss*(period-1)+loss)/period;
-  }
-  if(avgLoss===0) return 100;
-  const rs = avgGain/avgLoss;
-  return 100 - (100/(1+rs));
-}
-function bollingerPercentB(closes){
-  const period = 20, mult = 2;
-  if(closes.length < period) return null;
-  const recent = closes.slice(-period);
-  const mid = recent.reduce((a,b)=>a+b,0)/period;
-  const sd = stdev(recent);
-  const upper = mid + mult*sd;
-  const lower = mid - mult*sd;
-  const price = closes[closes.length-1];
-  const percentB = (price - lower)/(upper - lower);
-  return {percentB, upper, lower, mid};
-}
-function crossSignal(closes){
-  if(closes.length < 200) return {sma50:null,sma200:null,signal:"—"};
-  const sma50_now = sma(closes,50);
-  const sma200_now = sma(closes,200);
-  const prev50 = sma(closes.slice(0,-1),50);
-  const prev200 = sma(closes.slice(0,-1),200);
-  let signal = "neutral";
-  if(prev50 && prev200){
-    if(prev50<=prev200 && sma50_now> sma200_now) signal = "Golden Cross";
-    else if(prev50>=prev200 && sma50_now< sma200_now) signal = "Death Cross";
-    else signal = (sma50_now> sma200_now) ? "Bullish" : "Bearish";
-  }
-  return {sma50:sma50_now, sma200:sma200_now, signal};
-}
-function distanceFrom52wLow(closes){
-  const N = Math.min(closes.length, 260);
-  const last = closes[closes.length-1];
-  const slice = closes.slice(-N);
-  const low = Math.min(...slice);
-  const dist = (last - low)/low * 100;
-  return {low, last, dist};
-}
+/* ========================== Indikatoren ============================= */
+function sma(v,p){ if(v.length<p) return null; let s=0; for(let i=v.length-p;i<v.length;i++) s+=v[i]; return s/p; }
+function stdev(v){ const m=v.reduce((a,b)=>a+b,0)/v.length; return Math.sqrt(v.reduce((a,b)=>a+(b-m)*(b-m),0)/v.length); }
+function rsi14(c){ const n=14; if(c.length<=n) return null; let g=0,l=0; for(let i=1;i<=n;i++){ const ch=c[i]-c[i-1]; if(ch>=0) g+=ch; else l+=-ch; }
+  let ag=g/n, al=l/n; for(let i=n+1;i<c.length;i++){ const ch=c[i]-c[i-1], G=Math.max(ch,0), L=Math.max(-ch,0); ag=(ag*(n-1)+G)/n; al=(al*(n-1)+L)/n; }
+  if(al===0) return 100; const rs=ag/al; return 100-(100/(1+rs)); }
+function bollingerPercentB(c){ const p=20,m=2; if(c.length<p) return null; const r=c.slice(-p), mid=r.reduce((a,b)=>a+b,0)/p; const sd=stdev(r); const up=mid+m*sd, lo=mid-m*sd, px=c[c.length-1]; return {percentB:(px-lo)/(up-lo), upper:up, lower:lo, mid}; }
+function crossSignal(c){ if(c.length<200) return {sma50:null,sma200:null,signal:"—"}; const s50=sma(c,50), s200=sma(c,200), p50=sma(c.slice(0,-1),50), p200=sma(c.slice(0,-1),200);
+  let sig="neutral"; if(p50&&p200){ if(p50<=p200 && s50>s200) sig="Golden Cross"; else if(p50>=p200 && s50<s200) sig="Death Cross"; else sig=(s50>s200)?"Bullish":"Bearish"; } return {sma50:s50,sma200:s200,signal:sig}; }
+function distanceFrom52wLow(c){ const N=Math.min(c.length,260), last=c[c.length-1], slice=c.slice(-N), low=Math.min(...slice); return {low,last,dist:(last-low)/low*100}; }
 
-/* ------------------------ Rendering ------------------------ */
-function renderRSIGauge(value){
-  const el = qs("#rsiGauge");
-  el.innerHTML = "";
-  const v = Math.max(0, Math.min(100, value||0));
-  const arcs = [
-    {start:0,end:30,color:"#22c55e"},
-    {start:30,end:70,color:"#fbbf24"},
-    {start:70,end:100,color:"#ef4444"}
-  ];
-  const svgNS="http://www.w3.org/2000/svg";
-  const svg=document.createElementNS(svgNS,"svg"); svg.setAttribute("viewBox","0 0 100 50");
-
-  arcs.forEach(a=>{
-    const path=document.createElementNS(svgNS,"path");
-    const s = a.start/100*Math.PI, e=a.end/100*Math.PI;
-    const x1 = 50 - Math.cos(s)*48, y1 = 50 - Math.sin(s)*48;
-    const x2 = 50 - Math.cos(e)*48, y2 = 50 - Math.sin(e)*48;
-    const d = `M ${x1} ${y1} A 48 48 0 0 1 ${x2} ${y2}`;
-    path.setAttribute("d", d);
-    path.setAttribute("stroke", a.color);
-    path.setAttribute("stroke-width","8");
-    path.setAttribute("fill","none");
-    svg.appendChild(path);
-  });
-
-  // korrekte Halbrund-Skalierung: 0 → -90°, 100 → +90°
-  const angle = (v/100)*180 - 90;
-  const needle=document.createElementNS(svgNS,"line");
-  needle.setAttribute("x1","50"); needle.setAttribute("y1","50");
-  needle.setAttribute("x2","50"); needle.setAttribute("y2","4");
-  needle.setAttribute("stroke","#e7eef5"); needle.setAttribute("stroke-width","2");
-  needle.setAttribute("transform", `rotate(${angle} 50 50)`);
-  svg.appendChild(needle);
-  el.appendChild(svg);
-
-  const badge = qs("#rsiBadge");
-  badge.textContent = Math.round(v);
-  badge.className = "pill " + colorPill(v,30,70);
+/* ========================== Render ================================== */
+function renderRSIGauge(v){
+  const el=qs("#rsiGauge"); el.innerHTML=""; v=Math.max(0,Math.min(100,v||0));
+  const arcs=[{s:0,e:30,c:"#22c55e"},{s:30,e:70,c:"#fbbf24"},{s:70,e:100,c:"#ef4444"}];
+  const NS="http://www.w3.org/2000/svg", svg=document.createElementNS(NS,"svg"); svg.setAttribute("viewBox","0 0 100 50");
+  arcs.forEach(a=>{ const s=a.s/100*Math.PI,e=a.e/100*Math.PI, x1=50 - Math.cos(s)*48, y1=50 - Math.sin(s)*48, x2=50 - Math.cos(e)*48, y2=50 - Math.sin(e)*48;
+    const p=document.createElementNS(NS,"path"); p.setAttribute("d",`M ${x1} ${y1} A 48 48 0 0 1 ${x2} ${y2}`); p.setAttribute("stroke",a.c); p.setAttribute("stroke-width","8"); p.setAttribute("fill","none"); svg.appendChild(p); });
+  const angle=(v/100)*180 - 90, needle=document.createElementNS(NS,"line"); needle.setAttribute("x1","50"); needle.setAttribute("y1","50"); needle.setAttribute("x2","50"); needle.setAttribute("y2","4");
+  needle.setAttribute("stroke","#e7eef5"); needle.setAttribute("stroke-width","2"); needle.setAttribute("transform",`rotate(${angle} 50 50)`); svg.appendChild(needle); el.appendChild(svg);
+  const badge=qs("#rsiBadge"); badge.textContent=Math.round(v); badge.className="pill "+colorPill(v,30,70);
 }
-function renderPercentB(pb){
-  const pctVal = Math.max(0, Math.min(1, pb||0));
-  const w = Math.round(pctVal*100);
-  qs("#bbBar").style.width = w+"%";
-  qs("#bbBar").style.background =
-    pctVal<0.2 ? "linear-gradient(90deg,#059669,#22c55e)" :
-    pctVal>0.8 ? "linear-gradient(90deg,#ef4444,#f97316)" :
-                 "linear-gradient(90deg,#2563eb,#22c55e)";
-  qs("#bbText").textContent = `%B: ${w}% (0=unteres Band, 100=oberes Band)`;
-}
+function renderPercentB(pb){ const p=Math.max(0,Math.min(1,pb||0)), w=Math.round(p*100); const bar=qs("#bbBar"); bar.style.width=w+"%";
+  bar.style.background = p<0.2?"linear-gradient(90deg,#059669,#22c55e)": p>0.8?"linear-gradient(90deg,#ef4444,#f97316)":"linear-gradient(90deg,#2563eb,#22c55e)";
+  qs("#bbText").textContent=`%B: ${w}% (0=unteres Band, 100=oberes Band)`; }
 function renderSMACross(info){
-  const el = qs("#smaText");
-  el.innerHTML = `
+  qs("#smaText").innerHTML = `
     <div>SMA50: <strong>${fmt(info.sma50)}</strong></div>
     <div>SMA200: <strong>${fmt(info.sma200)}</strong></div>
-    <div>Status: ${
-      info.signal==="Golden Cross" ? '<span class="pill ok">Golden Cross</span>' :
-      info.signal==="Death Cross" ? '<span class="pill danger">Death Cross</span>' :
-      info.signal==="Bullish" ? '<span class="pill ok">Bullish</span>' :
-      '<span class="pill warn">Bearish/Neutral</span>'
-    }</div>`;
+    <div>Status: ${ info.signal==="Golden Cross" ? '<span class="pill ok">Golden Cross</span>' :
+                    info.signal==="Death Cross"   ? '<span class="pill danger">Death Cross</span>' :
+                    info.signal==="Bullish"       ? '<span class="pill ok">Bullish</span>' : '<span class="pill warn">Bearish/Neutral</span>'}
+    </div>`;
 }
-function renderDistance52w(d){
-  const color = (d.dist<10)?"ok":(d.dist<=20)?"warn":"danger";
-  qs("#distRow").innerHTML = `<span class="pill ${color}">${fmt(d.dist,1)}% über 52W‑Low (${fmt(d.low)})</span>`;
+function renderDistance52w(d){ const color=(d.dist<10)?"ok":(d.dist<=20)?"warn":"danger";
+  qs("#distRow").innerHTML=`<span class="pill ${color}">${fmt(d.dist,1)}% über 52W‑Low (${fmt(d.low)})</span>`;
   qs("#distText").textContent = `Aktuell: ${fmt(d.last)}`;
 }
 function renderPriceBlock(price, currency){
-  qs("#priceBlock").innerHTML = `<div style="font-size:20px;font-weight:700">${fmt(price)} ${currency||""}</div>`;
-}
-function computeScore({rsi, cross, percentB, dist52w}){
-  let score = 5, reasons = [];
-  if(rsi!==null){
-    if(rsi<30){ score+=2; reasons.push("RSI < 30 (überverkauft) +2"); }
-    else if(rsi>70){ score-=2; reasons.push("RSI > 70 (überkauft) −2"); }
-    else { score+=1; reasons.push("RSI 30–70 (neutral) +1"); }
-  }
-  if(cross){
-    if(cross.signal==="Golden Cross"){ score+=2; reasons.push("Golden Cross +2"); }
-    else if(cross.signal==="Death Cross"){ score-=2; reasons.push("Death Cross −2"); }
-    else if(cross.sma50>cross.sma200){ score+=1; reasons.push("SMA50 > SMA200 +1"); }
-  }
-  if(percentB!==null){
-    if(percentB<0.2){ score+=1; reasons.push("%B < 0.2 +1"); }
-    else if(percentB>0.8){ score-=1; reasons.push("%B > 0.8 −1"); }
-  }
-  if(dist52w!==null){
-    if(dist52w<10){ score+=2; reasons.push("≤10% über 52W‑Low +2"); }
-    else if(dist52w<=20){ score+=1; reasons.push("10–20% +1"); }
-  }
-  score = Math.max(1, Math.min(10, score));
-  const label = score>=7?"Kaufen":(score>=4?"Beobachten":"Nicht kaufen");
-  const color = score>=7?"ok":(score>=4?"warn":"danger");
-  setAmpel(score);
-  qs("#scoreText").innerHTML = `<span class="pill ${color}" style="font-weight:700">Score ${score}/10 · ${label}</span>`;
-  qs("#scoreExplain").innerHTML = "Begründung: " + reasons.join("; ") + ". (Heuristik – keine Anlageberatung)";
+  const cur = currency || ""; // ISO (z. B. USD, EUR)
+  qs("#priceBlock").innerHTML = `<div style="font-size:20px;font-weight:700">${fmt(price)} ${cur}</div>`;
 }
 
-/* ------------------------ Meta Rendering ------------------------ */
-function setCompanyMeta({symbol, fullName, sectorLabel, moat}){
-  qs("#metaSymbol").textContent = symbol || "—";
-  qs("#metaName").textContent = fullName || "—";
-  qs("#metaSector").textContent = `Sektor (qualitativ): ${sectorLabel || "—"}`;
-  qs("#metaMoat").textContent = `Burggraben: ${moat.strength||"—"}`;
-  qs("#metaMoatExplain").textContent = moat.basis
-    ? `${moat.explain} · (${moat.basis})`
-    : moat.explain;
+/* ========================== Meta ==================================== */
+function setCompanyMeta({symbol, fullName, sectorLabel, industryText, subIndustryText, moat}){
+  qs("#metaSymbol").textContent   = symbol || "—";
+  qs("#metaName").textContent     = fullName || "—";
+  qs("#metaSector").textContent   = `Sektor: ${sectorLabel || "—"}`;
+  qs("#metaIndustry").textContent = `Branche: ${industryText || "—"}`;
+  if(qs("#metaSubIndustry")){
+    qs("#metaSubIndustry").textContent = `Unterbranche: ${subIndustryText || "—"}`;
+  }
+  qs("#metaMoat").textContent     = `Burggraben: ${moat.strength||"—"}`;
+  qs("#metaMoatExplain").textContent = moat.basis ? `${moat.explain} · (${moat.basis})` : moat.explain;
 }
 
-/* ------------------------ Main Flow ------------------------ */
+/* ========================== Analyse‑Flow ============================= */
 async function analyze(symbolInput){
   try{
     setStatus(""); showSkeletonHeader(true);
     const symbol = symbolInput.trim();
 
-    // 1) Profile/Kurs
+    // 1) Yahoo Profile + Name + Währung
     const qsData = await getQuoteSummary(symbol);
     const res = qsData.quoteSummary?.result?.[0] || {};
-    const price = res.price || {};
+    const priceInfo = res.price || {};
     const ap = res.assetProfile || {};
     const sp = res.summaryProfile || {};
-    const currency = price?.currency || price?.currencySymbol || "";
 
-    // 2) Vollständiger Name (Fallback via Search)
-    let fullName = price?.longName || price?.shortName || "";
-    if(!fullName || fullName.toUpperCase() === symbol.toUpperCase()){
-      try{
-        const s = await searchYahoo(symbol); // holt longname/shortname
-        const hit = (s?.quotes||[]).find(q => (q.symbol||"").toUpperCase()===symbol.toUpperCase());
-        if(hit?.longname) fullName = hit.longname;
-        else if(hit?.shortname) fullName = hit.shortname;
-      }catch(e){}
-    }
-    if(!fullName) fullName = symbol; // letzter Fallback
+    let currency = priceInfo?.currency || "";        // primär Yahoo price.currency
+    let fullName = priceInfo?.longName || priceInfo?.shortName || ""; // voller Name
 
-    // 3) Chartdaten (für Signale)
+    // 2) Historie & Fallback‑Währung (Chart meta)
     const chart = await getChart(symbol);
     const result = chart.chart?.result?.[0];
     if(!result) throw new Error("Keine Kursdaten gefunden.");
     const closes = (result.indicators?.quote?.[0]?.close || []).filter(v=>v!=null);
     if(closes.length<50) throw new Error("Zu wenige Datenpunkte.");
+    if(!currency) currency = result?.meta?.currency || "";
 
-    // 4) Moat (Morningstar Heuristik + Profil‑Analyse)
+    // 3) Name‑Fallback: Yahoo‑Suche → Google Titel
+    if(!fullName || fullName.toUpperCase()===symbol.toUpperCase()){
+      try{
+        const s = await searchYahoo(symbol);
+        const hit = (s?.quotes||[]).find(q => (q.symbol||"").toUpperCase()===symbol.toUpperCase());
+        if(hit?.longname) fullName = hit.longname; else if(hit?.shortname) fullName = hit.shortname;
+      }catch(e){}
+    }
+
+    const exHint = priceInfo?.exchangeName || result?.meta?.exchangeName || result?.meta?.fullExchangeName || "";
+    let googleInfo = null;
+    try{ googleInfo = await getGoogleQuoteInfo(symbol, exHint); } catch(e){}
+
+    if((!fullName || fullName.toUpperCase()===symbol.toUpperCase()) && googleInfo?.name){
+      fullName = googleInfo.name;
+    }
+
+    // 4) Roh‑Sector/Industry (Yahoo → Google Fallback)
+    let sectorRaw   = ap?.sector   || sp?.sector   || "";
+    let industryRaw = ap?.industry || sp?.industry || "";
+    if(!sectorRaw   && googleInfo?.sector)   sectorRaw   = googleInfo.sector;
+    if(!industryRaw && googleInfo?.industry) industryRaw = googleInfo.industry;
+
+    // 5) Deutsche Labels
+    const sectorDE   = translateSectorDE(sectorRaw);
+    const brancheDE  = sectorAliasToBrancheDE(sectorRaw);
+    const subIndDE   = translateSubIndustryDE(industryRaw);
+
+    const sectorDisplay  = sectorDE ? (SHOW_EN_IN_PARENS && sectorRaw && sectorRaw!==sectorDE ? `${sectorDE} (${sectorRaw})` : sectorDE) : "—";
+    const brancheDisplay = brancheDE ? (SHOW_EN_IN_PARENS && sectorRaw && sectorRaw!==brancheDE ? `${brancheDE} (${sectorRaw})` : brancheDE) : "—";
+    const subIndDisplay  = subIndDE ? (SHOW_EN_IN_PARENS && industryRaw && industryRaw!==subIndDE ? `${subIndDE} (${industryRaw})` : subIndDE)
+                                    : (industryRaw || "—");
+
+    // 6) Qualitatives Kurzlabel (Insurance/REIT/BDC/…)
+    const sectorLabelQual = deriveQualSector(industryRaw, ap?.longBusinessSummary || "", fullName);
+
+    // 7) Burggraben
     const moatRating = await (async ()=>{
       try{
         const duck = `https://duckduckgo.com/html/?q=${encodeURIComponent(fullName + " Morningstar moat rating")}`;
-        const raw = await (await fetch(ALO + encodeURIComponent(duck))).text();
-        const html = JSON.parse(raw).contents; const txt = html.replace(/<[^>]+>/g," ");
+        const raw = await fetchHTMLViaProxy(duck);
+        const txt = raw.replace(/<[^>]+>/g," ");
         const m = /(Wide Moat|Narrow Moat|No Moat)/i.exec(txt);
         return m ? m[0].replace(/^\w/, c=>c.toUpperCase()) : "unbekannt";
       }catch(e){ return "unbekannt"; }
     })();
+    const moat = analyzeMoat(moatRating, ap?.longBusinessSummary || "");
 
-    // 5) Qualitativer Sektor (Sub‑Industry‑like)
-    const industry = ap?.industry || sp?.industry || null;
-    const description = ap?.longBusinessSummary || "";
-    const sectorLabel = deriveQualSector(industry, description, fullName);
-
-    // 6) Moat‑Qualifizierung (Stark/Mittel/Schwach + Begründung)
-    const moat = analyzeMoat(moatRating, description);
-
-    // 7) Technische Signale
+    // 8) Indikatoren
     const rsi = rsi14(closes);
     const bb = bollingerPercentB(closes);
     const cross = crossSignal(closes);
     const dist = distanceFrom52wLow(closes);
-    const last = closes[closes.length-1];
 
-    // 8) Render
-    setCompanyMeta({symbol, fullName, sectorLabel, moat});
+    // 9) Kurs (Yahoo → Google‑Fallback)
+    let last = closes.length ? closes[closes.length-1] : null;
+    if(last==null || Number.isNaN(last)){ if(googleInfo?.price) last = googleInfo.price; }
+
+    // 10) Render
+    setCompanyMeta({
+      symbol,
+      fullName,
+      sectorLabel: sectorDisplay || sectorLabelQual || "—",
+      industryText: brancheDisplay,
+      subIndustryText: subIndDisplay,
+      moat
+    });
     showSkeletonHeader(false);
     renderRSIGauge(rsi);
     renderPercentB(bb?bb.percentB:null);
@@ -539,8 +522,23 @@ async function analyze(symbolInput){
     renderDistance52w(dist);
     renderPriceBlock(last, currency);
 
-    // 9) Score
-    computeScore({rsi, cross, percentB: bb?bb.percentB:null, dist52w: dist?dist.dist:null});
+    // 11) Score (Heuristik)
+    let score=5, reasons=[];
+    if(rsi!==null){ if(rsi<30){score+=2; reasons.push("RSI < 30 +2");}
+      else if(rsi>70){score-=2; reasons.push("RSI > 70 −2");} else {score+=1; reasons.push("RSI 30–70 +1");} }
+    if(cross){ if(cross.signal==="Golden Cross"){score+=2; reasons.push("Golden Cross +2");}
+      else if(cross.signal==="Death Cross"){score-=2; reasons.push("Death Cross −2");}
+      else if(cross.sma50>cross.sma200){score+=1; reasons.push("SMA50>SMA200 +1");} }
+    if(bb){ if(bb.percentB<0.2){score+=1; reasons.push("%B < 0.2 +1");}
+      else if(bb.percentB>0.8){score-=1; reasons.push("%B > 0.8 −1");} }
+    if(dist){ if(dist.dist<10){score+=2; reasons.push("≤10% über 52W‑Low +2");}
+      else if(dist.dist<=20){score+=1; reasons.push("10–20% +1");} }
+    score=Math.max(1,Math.min(10,score));
+    const label = score>=7?"Kaufen":(score>=4?"Beobachten":"Nicht kaufen");
+    const color = score>=7?"ok":(score>=4?"warn":"danger");
+    setAmpel(score);
+    qs("#scoreText").innerHTML = `<span class="pill ${color}" style="font-weight:700">Score ${score}/10 · ${label}</span>`;
+    qs("#scoreExplain").innerHTML = "Begründung: " + reasons.join("; ") + ". (Heuristik – keine Anlageberatung)`;
 
   }catch(err){
     console.error(err);
@@ -548,19 +546,11 @@ async function analyze(symbolInput){
   }
 }
 
-/* Init */
+/* ========================== Init ==================================== */
 (function init(){
-  const q = new URLSearchParams(location.search).get("symbol");
   const input = qs("#query");
-  if(q){ input.value = q; analyze(q); }
-  document.getElementById("btnSearch").addEventListener("click", ()=> {
-    if(!input.value.trim()) { input.focus(); return; }
-    analyze(input.value);
-  });
-  document.getElementById("btnRefresh").addEventListener("click", ()=> {
-    if(!input.value.trim()) { input.focus(); return; }
-    analyze(input.value + "");
-  });
+  document.getElementById("btnSearch").addEventListener("click", ()=>{ if(!input.value.trim()) { input.focus(); return; } analyze(input.value); });
+  document.getElementById("btnRefresh").addEventListener("click", ()=>{ if(!input.value.trim()) { input.focus(); return; } analyze(input.value+""); });
 })();
 </script>
 </body>
